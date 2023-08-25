@@ -3,6 +3,7 @@
 
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
+  --accent-color: #4667AF;
 }
 
 html,
@@ -14,4 +15,8 @@ body {
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+}
+
+h1 {
+  color: var(--accent-color);
 }

@@ -1,7 +1,10 @@
 import './globals.css'
 import { Montserrat } from 'next/font/google'
 
-const montserrat = Montserrat({ subsets: ['latin'] })
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  weight: '300',
+})
 
 export const metadata = {
   title: 'Adam Bechtold',
