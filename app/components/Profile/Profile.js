@@ -1,9 +1,12 @@
-import Image from 'next/image';
-import styles from './Profile.module.css';
+import React from "react";
+import Image from "next/image";
+import styles from "./Profile.module.css";
 
-
+/**
+ * Quick information and links about Adam Bechtold.
+ * @return {JSX.Element} The profile component.
+ */
 export default function Profile() {
-
   return (
     <div className={styles.container}>
       <Image
@@ -16,5 +19,5 @@ export default function Profile() {
       />
       <h1>Adam Bechtold</h1>
     </div>
-  )
+  );
 }
