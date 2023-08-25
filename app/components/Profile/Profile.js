@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import styles from "./Profile.module.css";
+import PersonalLinks from "../PersonalLinks/PersonalLinks";
 
 /**
  * Quick information and links about Adam Bechtold.
@@ -18,6 +19,7 @@ export default function Profile() {
         priority
       />
       <h1>Adam Bechtold</h1>
+      <PersonalLinks />
     </div>
   );
 }
