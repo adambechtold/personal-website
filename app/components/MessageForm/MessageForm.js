@@ -1,23 +1,27 @@
 "use client";
 
-/* eslint-disable require-jsdoc */
 import React from "react";
+import { messageAdam } from "../../actions";
 
+/* eslint-disable require-jsdoc */
 export default function MessageForm() {
   const [email, setEmail] = React.useState("");
   const [message, setMessage] = React.useState("");
 
-  const handleSubmit = (event) => {
-    // event.preventDefault(); // Prevents default refresh by the browser - look this up before implementing it. It was suggested by copilot
+  async function onSubmit(formData) {
+    const response = await messageAdam(formData);
 
-    // send the message to the backend
-    alert(
-      `Message sent! Thank you for reaching out to me. I will get back to you as soon as possible.\nYou sent: ${message}`
-    );
-  };
+    if (response.code === 200) {
+      alert(response.message);
+      setEmail("");
+      setMessage("");
+    } else {
+      alert("Something went wrong, try again!");
+    }
+  }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form action={onSubmit}>
       <label htmlFor="email">
         Email
         <input
