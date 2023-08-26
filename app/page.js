@@ -9,7 +9,12 @@ import Profile from "./components/Profile/Profile";
 export default function Home() {
   return (
     <main className={styles.main}>
-      <Profile />
+      <div className={styles.container}>
+        <div className={styles.profileContainer}>
+          <Profile />
+        </div>
+        <div className={styles.content} />
+      </div>
     </main>
   );
 }

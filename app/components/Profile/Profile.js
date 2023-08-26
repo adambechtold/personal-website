@@ -18,7 +18,7 @@ export default function Profile() {
         height={240}
         priority
       />
-      <h1>Adam Bechtold</h1>
+      <h1 className={styles.title}>Adam Bechtold</h1>
       <PersonalLinks />
     </div>
   );

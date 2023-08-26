@@ -3,6 +3,31 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 6rem;
   min-height: 100vh;
+  background-color: red;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  background-color: pink;
+}
+
+.profileContainer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: fixed;
+  width: 15.9rem;
+  left: 0.5rem;
+  background-color: rgba(30, 144, 255, 0.5);
+}
+
+.content {
+  margin-left: 15.9rem;
+  width: 100%;
+  height: 1300px;
+  background-color: green;
 }
