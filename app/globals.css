@@ -17,6 +17,7 @@ body {
   background: rgb(var(--background-rgb));
 }
 
-h1 {
+h1,
+h2 {
   color: var(--accent-color);
 }
