@@ -1,5 +1,11 @@
 .container {
   margin: 1rem 2rem;
-  max-width: 40rem;
+  max-width: 37rem;
   background-color: yellow;
+}
+
+@media (max-width: 920px) {
+  .container {
+    max-width: 920px;
+  }
 }

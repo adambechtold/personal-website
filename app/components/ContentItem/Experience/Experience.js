@@ -1,6 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 
+import styles from "./Experience.module.css";
+
 const experiences = [
   {
     title: "Product Manager",
@@ -42,8 +44,14 @@ export default function Experience() {
   function ExperienceItem({ title, company, dates }) {
     return (
       <p>
-        <b> {title} </b> @ <b> {company} </b>
-        <small> {dates} </small>
+        <div className={styles.experienceItemContainer}>
+          <div>
+            <b> {title} </b> @ <b> {company} </b>
+          </div>
+          <div className={styles.dates}>
+            <small> {dates} </small>
+          </div>
+        </div>
       </p>
     );
   }
