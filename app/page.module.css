@@ -4,14 +4,12 @@
   justify-content: space-between;
   align-items: center;
   min-height: 100vh;
-  background-color: red;
 }
 
 .container {
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: pink;
 }
 
 .profileContainer {
@@ -22,13 +20,11 @@
   position: fixed;
   width: 15.9rem;
   left: 0.5rem;
-  background-color: rgba(30, 144, 255, 0.5);
 }
 
 .content {
   margin-left: 15.9rem;
   width: 100%;
-  background-color: green;
 
   display: flex;
   flex-direction: column;
@@ -43,7 +39,6 @@
   }
 
   .profileContainer {
-    background-color: purple;
     position: relative;
     height: 100%;
   }
