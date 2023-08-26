@@ -10,6 +10,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 950px;
 }
 
 .profileContainer {
@@ -19,11 +20,11 @@
   justify-content: center;
   position: fixed;
   width: 15.9rem;
-  left: 0.5rem;
+  left: 4%;
 }
 
 .content {
-  margin-left: 15.9rem;
+  margin-left: 17rem;
   width: 100%;
 
   display: flex;
