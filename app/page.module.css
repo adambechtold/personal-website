@@ -18,14 +18,16 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  position: fixed;
   width: 15.9rem;
-  left: 4%;
+
+  position: fixed;
+  left: 4vw;
 }
 
 .content {
   margin-left: 17rem;
   width: 100%;
+  min-height: 100vh;
 
   display: flex;
   flex-direction: column;
@@ -33,6 +35,7 @@
   align-items: flex-start;
 }
 
+/* for narrow displays */
 @media (max-width: 920px) {
   .container {
     flex-direction: column;
@@ -49,5 +52,26 @@
     margin-left: 0;
     padding-right: 0.5rem;
     padding-left: 0.5rem;
+  }
+}
+
+/* for tall, wide displays */
+@media (min-height: 670px) and (min-width: 920px) {
+  .container {
+    height: 100vh;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .content {
+    height: 100%;
+    justify-content: center;
+
+    width: 890px;
+    margin-left: 0;
+  }
+
+  .profileContainer {
+    position: static;
   }
 }
