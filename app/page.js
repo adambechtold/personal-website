@@ -7,7 +7,6 @@ import ContentItem from "./components/ContentItem/ContentItem";
 import Introduction from "./components/ContentItem/Introduction/Introduction";
 import Experience from "./components/ContentItem/Experience/Experience";
 import Education from "./components/ContentItem/Education/Education";
-import MessageForm from "./components/MessageForm/MessageForm";
 
 /**
  * Renders the home page.
@@ -29,9 +28,6 @@ export default function Home() {
           </ContentItem>
           <ContentItem title="🎓 education">
             <Education />
-          </ContentItem>
-          <ContentItem title="💬 let's chat">
-            <MessageForm />
           </ContentItem>
         </div>
       </div>
