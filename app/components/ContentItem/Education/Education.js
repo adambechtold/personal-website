@@ -4,15 +4,24 @@ import React from "react";
 const experiences = [
   {
     title: "Director of Technology",
-    organization: "Scout",
+    organization: {
+      name: "Scout",
+      link: "https://scout.camd.northeastern.edu/",
+    },
   },
   {
     title: "President",
-    organization: "TAMID Group",
+    organization: {
+      name: "TAMID Group",
+      link: "https://nutamid.org/",
+    },
   },
   {
     title: "Research Assistant",
-    organization: "Massachusetts General Hospital, Barret Lab",
+    organization: {
+      name: "Massachusetts General Hospital, Barret Lab",
+      link: "https://www.affective-science.org/",
+    },
   },
 ];
 
@@ -27,8 +36,11 @@ export default function Education() {
       <p>
         {experiences.map((experience) => (
           <>
-            <i key={`${experience.title}-${experience.organization}`}>
-              {experience.title} @ {experience.organization}
+            <i key={`${experience.title}-${experience.organization.name}`}>
+              - {experience.title} @{" "}
+              <a href={experience.organization.link}>
+                {experience.organization.name}
+              </a>
             </i>
             <br />
           </>
