@@ -10,14 +10,8 @@ const montserratFont = Montserrat({
 
 export const metadata = {
   title: "Adam Bechtold",
-  description: "Learn about the man, the myth, the legend...",
+  description: "Learn about Adam Bechtold.",
 };
-
-/**
- * This applies to every page.
- * @param {children} param0
- * @return {JSX.Element}
- */
 
 /**
  * Root layout component for the entire app.
