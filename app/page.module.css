@@ -56,7 +56,7 @@
 }
 
 /* for tall, wide displays */
-@media (min-height: 670px) and (min-width: 920px) {
+@media (min-height: 990px) and (min-width: 920px) {
   .container {
     height: 100vh;
     flex-direction: row;
