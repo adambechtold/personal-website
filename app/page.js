@@ -20,13 +20,13 @@ export default function Home() {
           <Profile />
         </div>
         <div className={styles.content}>
-          <ContentItem title="👋🏼 hello!">
+          <ContentItem title="👋🏼 Hello!">
             <Introduction />
           </ContentItem>
-          <ContentItem title="👨🏻‍💻 experience">
+          <ContentItem title="👨🏻‍💻 Experience">
             <Experience />
           </ContentItem>
-          <ContentItem title="🎓 education">
+          <ContentItem title="🎓 Education">
             <Education />
           </ContentItem>
         </div>
