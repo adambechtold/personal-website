@@ -20,7 +20,7 @@ export default function Home() {
           <Profile />
         </div>
         <div className={styles.content}>
-          <ContentItem title="👋🏼 hi">
+          <ContentItem title="👋🏼 hello!">
             <Introduction />
           </ContentItem>
           <ContentItem title="👨🏻‍💻 experience">
