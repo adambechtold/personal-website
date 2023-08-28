@@ -1,8 +1,12 @@
-.experienceItemContainer {
+.container {
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
+}
+
+.container:not(:last-child) {
+  margin-bottom: 1rem;
 }
 
 @media (min-width: 920px) {
@@ -12,7 +16,7 @@
 }
 
 @media (max-width: 920px) {
-  .experienceItemContainer {
+  .container {
     flex-direction: column;
     align-items: flex-start;
   }

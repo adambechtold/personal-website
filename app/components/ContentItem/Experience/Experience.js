@@ -43,7 +43,7 @@ export default function Experience() {
    */
   function ExperienceItem({ title, company, dates }) {
     return (
-      <div className={styles.experienceItemContainer}>
+      <div className={styles.container}>
         <div>
           <b> {title} </b> @ <b> {company} </b>
         </div>
