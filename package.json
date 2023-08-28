@@ -14,6 +14,7 @@
     "test": "npm run check-format && npm run check-lint && npm run build"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.0.2",
     "eslint-config-next": "13.4.19",
     "next": "13.4.19",
     "react": "18.2.0",
