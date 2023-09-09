@@ -14,7 +14,7 @@ ${message}`;
 
     sendMail({
       fromAddress: "inbound@adambechtold.xyz",
-      toAddress: "hi@adambechold.xyz",
+      toAddress: "hi@adambechtold.xyz",
       subject: `New Message From ${email}`,
       body,
     });
