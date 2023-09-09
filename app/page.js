@@ -7,7 +7,7 @@ import ContentItem from "./components/ContentItem/ContentItem";
 import Introduction from "./components/ContentItem/Introduction/Introduction";
 import Experience from "./components/ContentItem/Experience/Experience";
 import Education from "./components/ContentItem/Education/Education";
-import MessageForm from "./components/MessageForm/MessageForm";
+import MessageForm from "./components/ContentItem/MessageForm/MessageForm";
 
 /**
  * Renders the home page.

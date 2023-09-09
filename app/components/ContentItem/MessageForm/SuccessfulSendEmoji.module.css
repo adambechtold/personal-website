@@ -1,0 +1,28 @@
+.emoji {
+  position: fixed;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-fill-mode: forwards;
+  animation-name: grow, shoot-up;
+  animation-delay: 0s, 2s;
+  animation-duration: 2s, 3s;
+}
+
+@keyframes grow {
+  from {
+    font-size: 2rem;
+  }
+  to {
+    font-size: 10rem;
+  }
+}
+
+@keyframes shoot-up {
+  from {
+    transform: translate(-50%, -50%);
+  }
+  to {
+    transform: translate(-50%, -150vh);
+  }
+}

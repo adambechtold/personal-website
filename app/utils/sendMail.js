@@ -9,6 +9,11 @@ import fetch from "node-fetch";
  * @param {string} options.body - The body of the email.
  */
 export async function sendMail({ toAddress, fromAddress, subject, body }) {
+  if (process.env.NODE_ENV === "development") {
+    console.log("Email not sent in development mode.");
+    return true;
+  }
+
   try {
     const bodyJSON = JSON.stringify({
       Messages: [
@@ -45,6 +50,7 @@ export async function sendMail({ toAddress, fromAddress, subject, body }) {
     if (data == "Not authorized") {
       throw new Error("Not authorized");
     }
+    return data;
   } catch (error) {
     console.error("Error Sending Email", error);
   }
