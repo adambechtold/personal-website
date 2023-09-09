@@ -9,12 +9,15 @@ import fetch from "node-fetch";
  * @param {string} options.body - The body of the email.
  */
 export async function sendMail({ toAddress, fromAddress, subject, body }) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("Email not sent in development mode.");
-    return true;
-  }
-
   try {
+    if (process.env.NODE_ENV === "development") {
+      // console.log("Email not sent in development mode.");
+      return {
+        code: 200,
+        data: "Email not sent in development mode.",
+      };
+      // throw new Error("Email not sent in development mode.");
+    }
     const bodyJSON = JSON.stringify({
       Messages: [
         {
@@ -50,8 +53,16 @@ export async function sendMail({ toAddress, fromAddress, subject, body }) {
     if (data == "Not authorized") {
       throw new Error("Not authorized");
     }
-    return data;
+    return {
+      data,
+      code: response.status,
+    };
   } catch (error) {
     console.error("Error Sending Email", error);
+    return {
+      message: "Something went wrong",
+      code: 500,
+      error: error.toString(),
+    };
   }
 }
