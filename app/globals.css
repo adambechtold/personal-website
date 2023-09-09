@@ -47,6 +47,7 @@ textarea {
 form input,
 form textarea {
   margin-bottom: 12px;
+  margin-top: 6px;
   font-family: "Montserrat", sans-serif;
   padding: 10px;
 }

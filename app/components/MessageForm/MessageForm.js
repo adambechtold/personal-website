@@ -12,25 +12,25 @@ export default function MessageForm() {
     const response = await messageAdam(formData);
 
     if (response.code === 200) {
-      alert(response.message);
+      // TODO: confirm the message was sent
       setEmail("");
       setMessage("");
     } else {
-      alert("Something went wrong, try again!");
+      alert(`Something went wrong, try again! Message: ${response.message}}`);
     }
   }
 
   return (
     <form action={onSubmit}>
       <label htmlFor="email">
-        Email
+        Your Email Address
         <input
           name="email"
           type="email"
           id="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="Email Address"
+          placeholder="Email"
           required
         />
       </label>
