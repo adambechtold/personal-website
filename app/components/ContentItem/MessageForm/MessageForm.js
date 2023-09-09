@@ -14,8 +14,8 @@ export default function MessageForm() {
     INITIAL_STATE
   );
 
-  const [email, setEmail] = React.useState("test@test.com");
-  const [message, setMessage] = React.useState("Test");
+  const [email, setEmail] = React.useState("");
+  const [message, setMessage] = React.useState("");
 
   async function onSubmit(formData) {
     messageDispatch({ type: "MESSAGE_START" });
