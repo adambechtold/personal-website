@@ -46,8 +46,8 @@ export default function Introduction() {
         {" and "}
         <a href="https://foreignfork.com/red-chimichurri/">Argentina</a>, and
         working on preventing others (and myself) from{" "}
-        <a href="https://github.com/adambechtold/trailhead">
-          getting lost in the woods so much.
+        <a href="https://trailhead.adambechtold.xyz">
+          getting lost in the woods.
         </a>
       </p>
     </div>
