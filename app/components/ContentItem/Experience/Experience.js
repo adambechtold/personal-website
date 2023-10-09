@@ -12,7 +12,7 @@ const experiences = [
   {
     title: "Product Management Co-op",
     company: "Mavrck",
-    dates: "(july 2018 - decmeber 2018)",
+    dates: "(july 2018 - december 2018)",
   },
   {
     title: "Bioinformatics Co-op",
