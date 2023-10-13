@@ -8,7 +8,7 @@ export default function Introduction() {
     <div className={styles.container}>
       <p>
         {
-          "I'm Adam, a technical Product Manager diving into the world of computational biology research."
+          "I'm Adam, a technical Product Manager diving into the world of biology research."
         }
       </p>
       <p>
