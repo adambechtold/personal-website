@@ -5,12 +5,6 @@ import styles from "./Experience.module.css";
 
 const experiences = [
   {
-    title: "Founder",
-    company: "Trailhead",
-    dates: "(september 2023 - present)",
-    link: "https://trailhead.adambechtold.xyz",
-  },
-  {
     title: "Product Manager",
     company: "Cosmos",
     dates: "(july 2019 - may 2023)",
