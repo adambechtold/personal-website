@@ -6,15 +6,14 @@ import styles from "./Introduction.module.css";
 export default function Introduction() {
   return (
     <div className={styles.container}>
+      <p>{"I'm Adam. A lover of product, engineering, design, and biology."}</p>
       <p>
         {
-          "I'm Adam, a technical Product Manager diving into the world of biology research."
+          "After ~4 years in Climate Tech, I'm coming back to my biology roots to build on my experiences at Editas and Boston Scientific. I'm looking for roles that allow me to work closely with scientists, clinicians, and computational biologists to turbocharge their work."
         }
       </p>
       <p>
-        {
-          "After ~4 years in Climate Tech, I'm coming back to my biology roots to build on my experiences at Editas and Boston Scientific. I'm looking for roles that allow me to work closely with scientists, clinicians, and computational biologists to turbocharge their work. We're almost 1/4 through the "
-        }
+        {"We're almost 1/4 through the "}
         <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC419918/">
           Century of Biology
         </a>
