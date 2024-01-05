@@ -68,7 +68,7 @@ function ExperienceItem({ title, company, dates, link }) {
     );
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} key={`${title}-${company}`}>
       <div>
         <b> {title} </b> @ <Company company={company} link={link} />
       </div>

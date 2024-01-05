@@ -13,7 +13,7 @@ export default function Profile() {
       <Image
         src="/profile-picture.jpeg"
         alt="Profile Picture"
-        className={styles.profilePicture}
+        className={styles["profile-picture"]}
         width={240}
         height={240}
         priority
