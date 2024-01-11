@@ -10,13 +10,6 @@ const experiences = [
     },
   },
   {
-    title: "President",
-    organization: {
-      name: "TAMID Group",
-      link: "https://nutamid.org/",
-    },
-  },
-  {
     title: "Research Assistant",
     organization: {
       name: "Massachusetts General Hospital, Barret Lab",
