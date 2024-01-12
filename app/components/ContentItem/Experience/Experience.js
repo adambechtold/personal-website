@@ -6,22 +6,34 @@ import styles from "./Experience.module.css";
 const experiences = [
   {
     title: "Product Manager",
-    company: "Cosmos",
+    company: {
+      name: "Cosmos",
+      url: "https://www.cosmos.space",
+    },
     dates: "(july 2019 - may 2023)",
   },
   {
     title: "Product & Software Co-op",
-    company: "Mavrck",
+    company: {
+      name: "Mavrck",
+      url: "https://www.mavrck.co",
+    },
     dates: "(july 2018 - december 2018)",
   },
   {
     title: "Bioinformatics Co-op",
-    company: "Editas",
+    company: {
+      name: "Editas",
+      url: "https://www.editasmedicine.com",
+    },
     dates: "(july 2017 - june 2018)",
   },
   {
     title: "Endoscopy R&D Co-op",
-    company: "Boston Scientific",
+    company: {
+      name: "Boston Scientific",
+      url: "https://www.bostonscientific.com",
+    },
     dates: "(january 2016 - september 2016)",
   },
 ];
@@ -52,25 +64,16 @@ export default function Experience() {
  *
  * @param {Object} props - The props for the component.
  * @param {string} props.title - The title of the experience.
- * @param {string} props.company - The company of the experience.
+ * @param {string} props.company.name - The name of company of the experience.
+ * @param {string} props.company.url - The link to the company.
  * @param {string} props.dates - The dates of the experience.
- * @param {string} props.link - The link to the company.
  * @return {JSX.Element} The rendered experience item.
  */
-function ExperienceItem({ title, company, dates, link }) {
-  const Company = ({ company, link }) =>
-    link ? (
-      <b>
-        <a href={link}>{company}</a>
-      </b>
-    ) : (
-      <b>{company}</b>
-    );
-
+function ExperienceItem({ title, company, dates }) {
   return (
-    <div className={styles.container} key={`${title}-${company}`}>
+    <div className={styles.container} key={`${title}-${company.name}`}>
       <div>
-        <b> {title} </b> @ <Company company={company} link={link} />
+        <b> {title} </b> @ <a href={company.url}>{company.name}</a>
       </div>
       <div className={styles.dates}>
         <small> {dates} </small>
@@ -81,7 +84,9 @@ function ExperienceItem({ title, company, dates, link }) {
 
 ExperienceItem.propTypes = {
   title: PropTypes.string.isRequired,
-  company: PropTypes.string.isRequired,
+  company: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    url: PropTypes.string.isRequired,
+  }).isRequired,
   dates: PropTypes.string.isRequired,
-  link: PropTypes.string.notRequired,
 };
