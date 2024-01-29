@@ -1,7 +1,8 @@
 import React from "react";
 import Image from "next/image";
-import styles from "./Profile.module.css";
 import PersonalLinks from "../PersonalLinks/PersonalLinks";
+
+import styles from "./Profile.module.css";
 
 /**
  * Quick information and links about Adam Bechtold.

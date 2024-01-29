@@ -1,11 +1,5 @@
 import React from "react";
 import styles from "./ContentItem.module.css";
-import { Merriweather } from "next/font/google";
-
-const merriweatherFont = Merriweather({
-  subsets: ["latin"],
-  weight: "300",
-});
 
 import PropTypes from "prop-types";
 
@@ -21,7 +15,7 @@ import PropTypes from "prop-types";
 export default function ContentItem({ title, children }) {
   return (
     <div className={styles.container}>
-      <h2 className={merriweatherFont.className}>{title}</h2>
+      <h2>{title}</h2>
       {children}
     </div>
   );

@@ -4,7 +4,7 @@
 
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
-  --accent-color: #4667af;
+  --accent-color: #3c84f7;
 }
 
 html,
@@ -24,7 +24,11 @@ h2 {
 }
 
 h1 {
-  font-weight: 300;
+  font-weight: 600;
+}
+
+h2 {
+  font-weight: 500;
 }
 
 a {
