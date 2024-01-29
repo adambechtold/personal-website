@@ -69,6 +69,7 @@
     flex-direction: row;
     justify-content: flex-start;
     gap: 1.5rem;
+    margin-left: 2rem;
   }
 
   .content {
