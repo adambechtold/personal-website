@@ -36,7 +36,7 @@
 }
 
 /* short, wide screens */
-@media (max-height: 750px) and (min-width: 1100px) {
+@media (max-height: 1100px) and (min-width: 1100px) {
   .profileContainer {
     left: calc(50vw - 475px);
   }
@@ -63,7 +63,7 @@
 }
 
 /* for tall, wide displays */
-@media (min-height: 750px) and (min-width: 920px) {
+@media (min-height: 1100px) and (min-width: 920px) {
   .container {
     height: 100vh;
     flex-direction: row;

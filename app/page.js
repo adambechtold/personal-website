@@ -4,9 +4,10 @@ import styles from "./page.module.css";
 import Profile from "./components/Profile/Profile";
 import ContentItem from "./components/ContentItem/ContentItem";
 
-import Introduction from "./components/ContentItem/Introduction/Introduction";
-import Experience from "./components/ContentItem/Experience/Experience";
 import Education from "./components/ContentItem/Education/Education";
+import Experience from "./components/ContentItem/Experience/Experience";
+import Introduction from "./components/ContentItem/Introduction/Introduction";
+import Projects from "./components/ContentItem/Projects/Projects";
 
 /**
  * Renders the home page.
@@ -22,6 +23,9 @@ export default function Home() {
         <div className={styles.content}>
           <ContentItem title="👋🏼 Hello!">
             <Introduction />
+          </ContentItem>
+          <ContentItem title="🛠️ Recent Projects">
+            <Projects />
           </ContentItem>
           <ContentItem title="👨🏻‍💻 Experience">
             <Experience />
