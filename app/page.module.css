@@ -68,6 +68,7 @@
     height: 100vh;
     flex-direction: row;
     justify-content: flex-start;
+    gap: 1.5rem;
   }
 
   .content {
