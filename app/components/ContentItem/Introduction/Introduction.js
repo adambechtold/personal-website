@@ -7,19 +7,23 @@ export default function Introduction() {
   return (
     <div className={styles.container}>
       <p>
-        {
-          "I'm Adam, a Product Manager falling back in love with technical work."
-        }
+        I&apos;m Adam. I&apos;ve returned to software engineering after a few
+        years in product management.
       </p>
       <p>
-        I recently wrapped up my work at{" "}
-        <a href="https://cosmos.space">Cosmos Partners</a> and am noodling on
-        what comes next... 🤔
+        I&apos;ve rediscovered just how much I love solving technical problems
+        hands-on. I&apos;m looking for a role in which I can contribute quickly,
+        that takes advantage of my Product experience, and offers plenty of room
+        to grow.
       </p>
       <p>
-        In the meantime, check out my latest projects on{" "}
-        <a href="https://github.com/adambechtold">GitHub</a> and return to this
-        site soon for more updates!
+        If you&apos;re planning to interview me soon, take a look at this{" "}
+        <a href="https://docs.google.com/spreadsheets/d/1T5XWTvfeR3UWIPYFYr4-63ggB-xIo-I0PKQ41Vri90o/edit?usp=sharing">
+          list
+        </a>{" "}
+        of technical questions I&apos;ve practiced recently. It&apos;s important
+        to me that you ask me something fresh and challenging, so you have a
+        clear view into how I work.{" "}
       </p>
     </div>
   );
