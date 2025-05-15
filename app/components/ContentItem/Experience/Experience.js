@@ -5,6 +5,14 @@ import styles from "./Experience.module.css";
 
 const experiences = [
   {
+    title: "Software Engineer",
+    company: {
+      name: "VibeIq",
+      url: "https://www.vibeiq.com",
+    },
+    dates: "(march 2024 - present)",
+  },
+  {
     title: "Product Manager",
     company: {
       name: "Cosmos",
