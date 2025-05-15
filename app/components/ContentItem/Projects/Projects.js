@@ -23,7 +23,6 @@ const projects = [
     },
     description:
       "Explore the differences between your music taste and your friends'. Generate playlists that highlight the similarities and differences.",
-    link: "https://music.adambechtold.xyz",
     githubLink: "https://github.com/adambechtold/taste-explorer",
   },
 ];
@@ -64,6 +63,16 @@ export default function Projects() {
  * @return {JSX.Element} The rendered project item.
  */
 function ProjectItem({ title, logo, description, link, githubLink }) {
+  const isUnderMaintenance = !link;
+
+  const tryNowJsx = isUnderMaintenance ? (
+    <span>Under Maintenance</span>
+  ) : (
+    <a href={link} className={styles["primary-link"]}>
+      Try It Now
+    </a>
+  );
+
   return (
     <div className={styles["single-project-container"]} key={`${title}`}>
       <div className={styles["logo"]}>
@@ -71,9 +80,7 @@ function ProjectItem({ title, logo, description, link, githubLink }) {
       </div>
       <div>{description}</div>
       <div className={styles["links-container"]}>
-        <a href={link} className={styles["primary-link"]}>
-          Try It Now
-        </a>
+        {tryNowJsx}
         <a href={githubLink}>See The Code</a>
       </div>
     </div>
