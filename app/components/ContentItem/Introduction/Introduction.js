@@ -16,7 +16,7 @@ export default function Introduction() {
         >
           VibeIQ&apos;s
         </a>{" "}
-        platform faster, more reliable, and always secure.
+        platform faster, more reliable, and impenetrably secure.
       </p>
     </div>
   );
