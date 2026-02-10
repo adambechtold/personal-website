@@ -22,5 +22,6 @@ module.exports = {
   plugins: ["react"],
   rules: {
     "new-cap": "off",
+    "react/no-unknown-property": ["error", { ignore: ["jsx", "global"] }],
   },
 };
