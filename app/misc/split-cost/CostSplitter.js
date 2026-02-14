@@ -12,18 +12,26 @@ let nextId = 3;
 export default function CostSplitter() {
   const [totalCost, setTotalCost] = useState("");
   const [people, setPeople] = useState([
-    { id: 1, name: "Person 1", shares: 1 },
-    { id: 2, name: "Person 2", shares: 1 },
+    { id: 1, name: "Person 1", shares: 1, adjustment: "" },
+    { id: 2, name: "Person 2", shares: 1, adjustment: "" },
   ]);
 
   const totalShares = people.reduce((sum, p) => sum + p.shares, 0);
   const cost = parseFloat(totalCost) || 0;
+  const totalAdjustments = people.reduce(
+    (sum, p) => sum + (parseFloat(p.adjustment) || 0),
+    0
+  );
+  const remainingCost = cost - totalAdjustments;
 
   /**
    * Adds a new person to the list.
    */
   function addPerson() {
-    setPeople([...people, { id: nextId, name: `Person ${nextId}`, shares: 1 }]);
+    setPeople([
+      ...people,
+      { id: nextId, name: `Person ${nextId}`, shares: 1, adjustment: "" },
+    ]);
     nextId++;
   }
 
@@ -93,6 +101,16 @@ export default function CostSplitter() {
                 )
               }
             />
+            <input
+              className={styles.adjustmentInput}
+              type="number"
+              step="0.01"
+              placeholder="+/- $"
+              value={person.adjustment}
+              onChange={(e) =>
+                updatePerson(person.id, "adjustment", e.target.value)
+              }
+            />
             <button
               className={styles.removeButton}
               onClick={() => removePerson(person.id)}
@@ -107,7 +125,8 @@ export default function CostSplitter() {
           <div className={styles.results}>
             <h2 className={styles.resultsTitle}>Each Person Owes</h2>
             {people.map((person) => {
-              const amount = (person.shares / totalShares) * cost;
+              const shareAmount = (person.shares / totalShares) * remainingCost;
+              const amount = shareAmount + (parseFloat(person.adjustment) || 0);
               return (
                 <div key={person.id} className={styles.resultRow}>
                   <span className={styles.resultName}>{person.name}</span>
