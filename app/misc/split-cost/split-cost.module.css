@@ -1,0 +1,150 @@
+.page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.totalSection {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: #666;
+}
+
+.totalInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.totalInput:focus {
+  border-color: #3c84f7;
+}
+
+.peopleHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.peopleTitle {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.addButton {
+  background: none;
+  border: 1px solid #3c84f7;
+  color: #3c84f7;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background: #3c84f7;
+  color: #fff;
+}
+
+.personRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.nameInput {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.nameInput:focus {
+  border-color: #3c84f7;
+}
+
+.sharesInput {
+  width: 4rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  text-align: center;
+}
+
+.sharesInput:focus {
+  border-color: #3c84f7;
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  line-height: 1;
+}
+
+.removeButton:hover {
+  color: #e33;
+}
+
+.results {
+  margin-top: 1.5rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+}
+
+.resultsTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.resultRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-size: 0.95rem;
+}
+
+.resultName {
+  color: #333;
+}
+
+.resultAmount {
+  font-weight: 600;
+  color: #3c84f7;
+}
