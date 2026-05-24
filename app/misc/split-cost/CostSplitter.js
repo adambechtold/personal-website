@@ -58,6 +58,7 @@ export default function CostSplitter() {
     <div className={styles.page}>
       <div className={styles.container}>
         <h1 className={styles.title}>Split Cost</h1>
+        <p className={styles.subtitle}>Ireland trip tracker — coming soon ☘️</p>
 
         <div className={styles.totalSection}>
           <label className={styles.label}>Total Cost ($)</label>
