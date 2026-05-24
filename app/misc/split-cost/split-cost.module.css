@@ -51,6 +51,22 @@
   border-color: #3c84f7;
 }
 
+.dateInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  margin-bottom: 0;
+}
+
+.dateInput:focus {
+  border-color: #3c84f7;
+}
+
 .peopleHeader {
   display: flex;
   justify-content: space-between;

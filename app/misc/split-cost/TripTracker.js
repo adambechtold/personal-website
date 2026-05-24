@@ -394,7 +394,7 @@ function ExpenseFields({ form, setForm, person, styles }) {
       <div className={styles.formRow}>
         <label className={styles.label}>Date</label>
         <input
-          className={styles.totalInput}
+          className={styles.dateInput}
           type="date"
           value={form.expense_date}
           onChange={(e) => setForm({ ...form, expense_date: e.target.value })}
