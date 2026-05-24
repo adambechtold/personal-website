@@ -171,3 +171,243 @@
   font-weight: 600;
   color: #3c84f7;
 }
+
+/* ── Trip Tracker ─────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.personSelector {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.personBtn {
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.personBtnActive {
+  background: #3c84f7;
+  border-color: #3c84f7;
+  color: #fff;
+  font-weight: 600;
+}
+
+.settlement {
+  background: #f7f9ff;
+  border: 1px solid #dce8ff;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.settlementLine {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+  color: #1a1a1a;
+}
+
+.settlementBreakdown {
+  font-size: 0.82rem;
+}
+
+.settlementRow {
+  display: grid;
+  grid-template-columns: 3rem 1fr 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.2rem 0;
+  color: #444;
+}
+
+.settlementHeader {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #dce8ff;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.1rem;
+}
+
+.positive {
+  color: #1a7f3c;
+  font-weight: 600;
+}
+
+.negative {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.section {
+  margin-bottom: 1.75rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1a1a1a;
+}
+
+.expenseForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sharesRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.shareCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.submitBtn {
+  background: #3c84f7;
+  border: none;
+  color: #fff;
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.editActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.expenseCard {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.6rem;
+  background: #fff;
+}
+
+.expenseMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.expenseInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.expenseDesc {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expenseMeta {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.expenseActions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.editBtn {
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.editBtn:hover {
+  border-color: #3c84f7;
+  color: #3c84f7;
+}
+
+.deleteBtn {
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.deleteBtn:hover {
+  border-color: #e33;
+  color: #e33;
+}
+
+.expensePortions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  color: #555;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 0.4rem;
+}
+
+.empty {
+  color: #999;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
