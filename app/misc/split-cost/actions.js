@@ -4,7 +4,10 @@ import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
 
 /**
- * Creates the expenses table if it does not exist.
+ * Creates or migrates the expenses table.
+ * Phase-1 columns are created via CREATE TABLE IF NOT EXISTS.
+ * Phase-2 columns (currency, rate_to_base, rate_date) are added idempotently
+ * using ADD COLUMN IF NOT EXISTS, backfilled for legacy USD rows, then made NOT NULL.
  */
 export async function ensureSchema() {
   await sql`
@@ -21,6 +24,43 @@ export async function ensureSchema() {
       created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
     )
   `;
+  await sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS currency     TEXT`;
+  await sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS rate_to_base NUMERIC(14,6)`;
+  await sql`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS rate_date    DATE`;
+  await sql`UPDATE expenses SET currency     = 'USD'        WHERE currency     IS NULL`;
+  await sql`UPDATE expenses SET rate_to_base = 1            WHERE rate_to_base IS NULL`;
+  await sql`UPDATE expenses SET rate_date    = expense_date WHERE rate_date    IS NULL`;
+  await sql`ALTER TABLE expenses ALTER COLUMN currency     SET NOT NULL`;
+  await sql`ALTER TABLE expenses ALTER COLUMN rate_to_base SET NOT NULL`;
+  await sql`ALTER TABLE expenses ALTER COLUMN rate_date    SET NOT NULL`;
+}
+
+/**
+ * Fetches the USD exchange rate for a currency on a given date.
+ * Returns {rate_to_base: 1, rate_date: date} immediately for USD.
+ * Throws a user-facing error on any failure so nothing is saved with a bad rate.
+ * @param {string} currency - ISO 4217 currency code.
+ * @param {string} date - YYYY-MM-DD date string.
+ * @return {Promise<{rate_to_base: number, rate_date: string}>}
+ */
+async function fetchRate(currency, date) {
+  if (currency === "USD") return { rate_to_base: 1, rate_date: date };
+  const url = `https://api.frankfurter.dev/v2/rates?date=${date}&base=${currency}&quotes=USD`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || !data[0] || typeof data[0].rate !== "number") {
+      throw new Error("Unexpected response shape");
+    }
+    return { rateToBase: data[0].rate, rateDate: data[0].date };
+  } catch {
+    clearTimeout(timer);
+    throw new Error("Couldn't fetch the exchange rate — try again.");
+  }
 }
 
 /**
@@ -45,6 +85,7 @@ function validate(paidBy, amount, expenseDate, adamShares, mattShares) {
  * @param {string|number} data.amount
  * @param {string} data.description
  * @param {string} data.expense_date
+ * @param {string} data.currency
  * @param {string|number} data.adam_shares
  * @param {string|number} data.matt_shares
  * @param {string|number} data.adam_adjustment
@@ -55,18 +96,22 @@ export async function addExpense(data) {
   const amount = parseFloat(data.amount);
   const description = data.description || "";
   const expenseDate = data.expense_date;
+  const currency = data.currency || "EUR";
   const adamShares = parseInt(data.adam_shares) || 0;
   const mattShares = parseInt(data.matt_shares) || 0;
   const adamAdjustment = parseFloat(data.adam_adjustment) || 0;
   const mattAdjustment = parseFloat(data.matt_adjustment) || 0;
 
   validate(paidBy, amount, expenseDate, adamShares, mattShares);
+  const { rateToBase, rateDate } = await fetchRate(currency, expenseDate);
   await ensureSchema();
   await sql`
     INSERT INTO expenses
-      (paid_by, amount, description, expense_date, adam_shares, matt_shares, adam_adjustment, matt_adjustment)
+      (paid_by, amount, description, expense_date, currency, rate_to_base, rate_date,
+       adam_shares, matt_shares, adam_adjustment, matt_adjustment)
     VALUES
-      (${paidBy}, ${amount}, ${description}, ${expenseDate}, ${adamShares}, ${mattShares}, ${adamAdjustment}, ${mattAdjustment})
+      (${paidBy}, ${amount}, ${description}, ${expenseDate}, ${currency}, ${rateToBase}, ${rateDate},
+       ${adamShares}, ${mattShares}, ${adamAdjustment}, ${mattAdjustment})
   `;
   revalidatePath("/misc/split-cost");
 }
@@ -79,6 +124,7 @@ export async function addExpense(data) {
  * @param {string|number} data.amount
  * @param {string} data.description
  * @param {string} data.expense_date
+ * @param {string} data.currency
  * @param {string|number} data.adam_shares
  * @param {string|number} data.matt_shares
  * @param {string|number} data.adam_adjustment
@@ -89,12 +135,14 @@ export async function updateExpense(id, data) {
   const amount = parseFloat(data.amount);
   const description = data.description || "";
   const expenseDate = data.expense_date;
+  const currency = data.currency || "EUR";
   const adamShares = parseInt(data.adam_shares) || 0;
   const mattShares = parseInt(data.matt_shares) || 0;
   const adamAdjustment = parseFloat(data.adam_adjustment) || 0;
   const mattAdjustment = parseFloat(data.matt_adjustment) || 0;
 
   validate(paidBy, amount, expenseDate, adamShares, mattShares);
+  const { rateToBase, rateDate } = await fetchRate(currency, expenseDate);
   await ensureSchema();
   await sql`
     UPDATE expenses SET
@@ -102,6 +150,9 @@ export async function updateExpense(id, data) {
       amount          = ${amount},
       description     = ${description},
       expense_date    = ${expenseDate},
+      currency        = ${currency},
+      rate_to_base    = ${rateToBase},
+      rate_date       = ${rateDate},
       adam_shares     = ${adamShares},
       matt_shares     = ${mattShares},
       adam_adjustment = ${adamAdjustment},

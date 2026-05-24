@@ -7,11 +7,25 @@ import { addExpense, updateExpense, deleteExpense } from "./actions";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
+const CURRENCIES = [
+  "USD",
+  "EUR",
+  "GBP",
+  "CAD",
+  "AUD",
+  "CHF",
+  "JPY",
+  "SEK",
+  "NOK",
+  "DKK",
+];
+
 const EMPTY_FORM = {
   description: "",
   amount: "",
   expense_date: TODAY,
   paid_by: "",
+  currency: "EUR",
   adam_shares: "1",
   matt_shares: "1",
   adam_adjustment: "0",
@@ -19,7 +33,22 @@ const EMPTY_FORM = {
 };
 
 /**
- * Computes adam's and matt's portion for a single expense.
+ * Formats an amount in a given currency for display.
+ * @param {number} amount
+ * @param {string} currency - ISO 4217 code.
+ * @return {string}
+ */
+function formatCurrency(amount, currency) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+/**
+ * Computes adam's and matt's portion for a single expense (in transaction currency).
  * @param {Object} exp - Expense row.
  * @return {{adamPortion: number, mattPortion: number}}
  */
@@ -43,7 +72,7 @@ function computePortions(exp) {
 }
 
 /**
- * Computes settlement totals across all expenses.
+ * Computes settlement totals across all expenses, converting to USD via rate_to_base.
  * @param {Array} expenses - All expense rows.
  * @return {{adamPaid: number, mattPaid: number, adamOwed: number, mattOwed: number, adamNet: number, mattNet: number}}
  */
@@ -54,11 +83,12 @@ function computeSettlement(expenses) {
   let mattOwed = 0;
   for (const exp of expenses) {
     const amount = parseFloat(exp.amount);
-    if (exp.paid_by === "adam") adamPaid += amount;
-    else mattPaid += amount;
+    const rate = parseFloat(exp.rate_to_base) || 1;
+    if (exp.paid_by === "adam") adamPaid += amount * rate;
+    else mattPaid += amount * rate;
     const { adamPortion, mattPortion } = computePortions(exp);
-    adamOwed += adamPortion;
-    mattOwed += mattPortion;
+    adamOwed += adamPortion * rate;
+    mattOwed += mattPortion * rate;
   }
   return {
     adamPaid,
@@ -178,6 +208,7 @@ export default function TripTracker({ initialExpenses }) {
       amount: parseFloat(exp.amount).toString(),
       description: exp.description,
       expense_date: exp.expense_date,
+      currency: exp.currency || "USD",
       adam_shares: exp.adam_shares.toString(),
       matt_shares: exp.matt_shares.toString(),
       adam_adjustment: parseFloat(exp.adam_adjustment).toString(),
@@ -267,7 +298,7 @@ export default function TripTracker({ initialExpenses }) {
               type="submit"
               disabled={pending}
             >
-              {pending ? "Adding…" : "Add Expense"}
+              {pending ? "Fetching rate…" : "Add Expense"}
             </button>
           </form>
         </div>
@@ -282,6 +313,9 @@ export default function TripTracker({ initialExpenses }) {
           )}
           {initialExpenses.map((exp) => {
             const { adamPortion, mattPortion } = computePortions(exp);
+            const rate = parseFloat(exp.rate_to_base) || 1;
+            const currency = exp.currency || "USD";
+            const isUSD = currency === "USD";
             const isEditing = editId === exp.id;
             return (
               <div key={exp.id} className={styles.expenseCard}>
@@ -299,7 +333,7 @@ export default function TripTracker({ initialExpenses }) {
                         type="submit"
                         disabled={pending}
                       >
-                        Save
+                        {pending ? "Fetching rate…" : "Save"}
                       </button>
                       <button
                         className={styles.cancelBtn}
@@ -319,9 +353,27 @@ export default function TripTracker({ initialExpenses }) {
                         </span>
                         <span className={styles.expenseMeta}>
                           {formatDate(exp.expense_date)} ·{" "}
-                          {exp.paid_by === "adam" ? "Adam" : "Matt"} paid $
-                          {parseFloat(exp.amount).toFixed(2)}
+                          {exp.paid_by === "adam" ? "Adam" : "Matt"} paid{" "}
+                          {isUSD
+                            ? formatCurrency(parseFloat(exp.amount), "USD")
+                            : `${formatCurrency(
+                                parseFloat(exp.amount),
+                                currency
+                              )} (${formatCurrency(
+                                parseFloat(exp.amount) * rate,
+                                "USD"
+                              )})`}
                         </span>
+                        {!isUSD && (
+                          <span className={styles.rateNote}>
+                            1 {currency} = ${rate.toFixed(4)} on{" "}
+                            {formatDate(
+                              typeof exp.rate_date === "string"
+                                ? exp.rate_date
+                                : exp.rate_date.toISOString().slice(0, 10)
+                            )}
+                          </span>
+                        )}
                       </div>
                       <div className={styles.expenseActions}>
                         <button
@@ -341,8 +393,12 @@ export default function TripTracker({ initialExpenses }) {
                       </div>
                     </div>
                     <div className={styles.expensePortions}>
-                      <span>Adam: ${adamPortion.toFixed(2)}</span>
-                      <span>Matt: ${mattPortion.toFixed(2)}</span>
+                      <span>
+                        Adam: {formatCurrency(adamPortion * rate, "USD")}
+                      </span>
+                      <span>
+                        Matt: {formatCurrency(mattPortion * rate, "USD")}
+                      </span>
                     </div>
                   </>
                 )}
@@ -365,6 +421,7 @@ TripTracker.propTypes = {
  * @return {React.ReactElement}
  */
 function ExpenseFields({ form, setForm, person, styles }) {
+  const currency = form.currency || "EUR";
   return (
     <>
       <div className={styles.formRow}>
@@ -378,18 +435,34 @@ function ExpenseFields({ form, setForm, person, styles }) {
           required
         />
       </div>
-      <div className={styles.formRow}>
-        <label className={styles.label}>Amount ($)</label>
-        <input
-          className={styles.totalInput}
-          type="number"
-          min="0.01"
-          step="0.01"
-          placeholder="0.00"
-          value={form.amount}
-          onChange={(e) => setForm({ ...form, amount: e.target.value })}
-          required
-        />
+      <div className={styles.currencyAmountRow}>
+        <div className={styles.currencyCol}>
+          <label className={styles.label}>Currency</label>
+          <select
+            className={styles.totalInput}
+            value={currency}
+            onChange={(e) => setForm({ ...form, currency: e.target.value })}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.amountCol}>
+          <label className={styles.label}>Amount ({currency})</label>
+          <input
+            className={styles.totalInput}
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="0.00"
+            value={form.amount}
+            onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            required
+          />
+        </div>
       </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Date</label>
