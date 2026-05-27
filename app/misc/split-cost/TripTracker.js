@@ -24,7 +24,7 @@ const EMPTY_FORM = {
   description: "",
   amount: "",
   expense_date: TODAY,
-  paid_by: "",
+  paid_by: "adam",
   currency: "EUR",
   adam_shares: "1",
   matt_shares: "1",
@@ -117,7 +117,6 @@ function formatDate(dateStr) {
  * @return {React.ReactElement}
  */
 export default function TripTracker({ initialExpenses }) {
-  const [person, setPerson] = useState("adam");
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -125,17 +124,8 @@ export default function TripTracker({ initialExpenses }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
-    if (saved === "adam" || saved === "matt") setPerson(saved);
+    if (saved === "adam" || saved === "matt") setForm((f) => ({ ...f, paid_by: saved }));
   }, []);
-
-  /**
-   * Selects the active person and persists to localStorage.
-   * @param {string} p - 'adam' or 'matt'.
-   */
-  function selectPerson(p) {
-    setPerson(p);
-    localStorage.setItem("trip-person", p);
-  }
 
   const settlement = computeSettlement(initialExpenses);
   const { adamNet } = settlement;
@@ -157,7 +147,7 @@ export default function TripTracker({ initialExpenses }) {
     e.preventDefault();
     setPending(true);
     try {
-      await addExpense({ ...form, paid_by: form.paid_by || person });
+      await addExpense(form);
       window.location.reload();
     } catch (err) {
       alert("Failed to add expense: " + err.message);
@@ -220,27 +210,7 @@ export default function TripTracker({ initialExpenses }) {
     <div className={styles.page}>
       <div className={styles.container}>
         {/* Header */}
-        <div className={styles.header}>
-          <h1 className={styles.title}>🇮🇪 Ireland Trip</h1>
-          <div className={styles.personSelector}>
-            <button
-              className={`${styles.personBtn} ${
-                person === "adam" ? styles.personBtnActive : ""
-              }`}
-              onClick={() => selectPerson("adam")}
-            >
-              Adam
-            </button>
-            <button
-              className={`${styles.personBtn} ${
-                person === "matt" ? styles.personBtnActive : ""
-              }`}
-              onClick={() => selectPerson("matt")}
-            >
-              Matt
-            </button>
-          </div>
-        </div>
+        <h1 className={styles.title}>🇮🇪 Ireland Trip</h1>
 
         {/* Settlement Summary */}
         <div className={styles.settlement}>
@@ -290,7 +260,6 @@ export default function TripTracker({ initialExpenses }) {
             <ExpenseFields
               form={form}
               setForm={setForm}
-              person={person}
               styles={styles}
             />
             <button
@@ -324,7 +293,6 @@ export default function TripTracker({ initialExpenses }) {
                     <ExpenseFields
                       form={editForm}
                       setForm={setEditForm}
-                      person={person}
                       styles={styles}
                     />
                     <div className={styles.editActions}>
@@ -420,7 +388,7 @@ TripTracker.propTypes = {
  * @param {{form: Object, setForm: Function, person: string, styles: Object}} props
  * @return {React.ReactElement}
  */
-function ExpenseFields({ form, setForm, person, styles }) {
+function ExpenseFields({ form, setForm, styles }) {
   const currency = form.currency || "EUR";
   return (
     <>
@@ -476,14 +444,21 @@ function ExpenseFields({ form, setForm, person, styles }) {
       </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Paid by</label>
-        <select
-          className={styles.totalInput}
-          value={form.paid_by || person}
-          onChange={(e) => setForm({ ...form, paid_by: e.target.value })}
-        >
-          <option value="adam">Adam</option>
-          <option value="matt">Matt</option>
-        </select>
+        <div className={styles.personSelector}>
+          {["adam", "matt"].map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.personBtn} ${form.paid_by === p ? styles.personBtnActive : ""}`}
+              onClick={() => {
+                setForm({ ...form, paid_by: p });
+                localStorage.setItem("trip-person", p);
+              }}
+            >
+              {p === "adam" ? "Adam" : "Matt"}
+            </button>
+          ))}
+        </div>
       </div>
       <div className={styles.sharesRow}>
         <div className={styles.shareCol}>
@@ -542,6 +517,5 @@ function ExpenseFields({ form, setForm, person, styles }) {
 ExpenseFields.propTypes = {
   form: PropTypes.object.isRequired,
   setForm: PropTypes.func.isRequired,
-  person: PropTypes.string.isRequired,
   styles: PropTypes.object.isRequired,
 };
