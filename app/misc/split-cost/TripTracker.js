@@ -7,25 +7,16 @@ import { addExpense, updateExpense, deleteExpense } from "./actions";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-const CURRENCIES = [
-  "USD",
-  "EUR",
-  "GBP",
-  "CAD",
-  "AUD",
-  "CHF",
-  "JPY",
-  "SEK",
-  "NOK",
-  "DKK",
-];
+const CURRENCIES = ["USD", "EUR"];
+
+const CURRENCY_FLAGS = { USD: "🇺🇸", EUR: "🇪🇺" };
 
 const EMPTY_FORM = {
   description: "",
   amount: "",
   expense_date: TODAY,
   paid_by: "adam",
-  currency: "EUR",
+  currency: "USD",
   adam_shares: "1",
   matt_shares: "1",
   adam_adjustment: "0",
@@ -389,9 +380,37 @@ TripTracker.propTypes = {
  * @return {React.ReactElement}
  */
 function ExpenseFields({ form, setForm, styles }) {
-  const currency = form.currency || "EUR";
+  const currency = form.currency || "USD";
   return (
     <>
+      <div className={styles.formRow}>
+        <label className={styles.label}>Amount ({currency})</label>
+        <input
+          className={styles.totalInput}
+          type="number"
+          min="0.01"
+          step="0.01"
+          placeholder="0.00"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+          required
+        />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.label}>Currency</label>
+        <div className={styles.personSelector}>
+          {CURRENCIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`${styles.personBtn} ${currency === c ? styles.personBtnActive : ""}`}
+              onClick={() => setForm({ ...form, currency: c })}
+            >
+              {CURRENCY_FLAGS[c]} {c}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Description</label>
         <input
@@ -400,45 +419,6 @@ function ExpenseFields({ form, setForm, styles }) {
           placeholder="e.g. Dinner"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          required
-        />
-      </div>
-      <div className={styles.currencyAmountRow}>
-        <div className={styles.currencyCol}>
-          <label className={styles.label}>Currency</label>
-          <select
-            className={styles.totalInput}
-            value={currency}
-            onChange={(e) => setForm({ ...form, currency: e.target.value })}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles.amountCol}>
-          <label className={styles.label}>Amount ({currency})</label>
-          <input
-            className={styles.totalInput}
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0.00"
-            value={form.amount}
-            onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            required
-          />
-        </div>
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.label}>Date</label>
-        <input
-          className={styles.dateInput}
-          type="date"
-          value={form.expense_date}
-          onChange={(e) => setForm({ ...form, expense_date: e.target.value })}
           required
         />
       </div>
@@ -459,6 +439,16 @@ function ExpenseFields({ form, setForm, styles }) {
             </button>
           ))}
         </div>
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.label}>Date</label>
+        <input
+          className={styles.dateInput}
+          type="date"
+          value={form.expense_date}
+          onChange={(e) => setForm({ ...form, expense_date: e.target.value })}
+          required
+        />
       </div>
       <div className={styles.sharesRow}>
         <div className={styles.shareCol}>
