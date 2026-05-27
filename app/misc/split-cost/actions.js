@@ -44,8 +44,8 @@ export async function ensureSchema() {
  * @return {Promise<{rate_to_base: number, rate_date: string}>}
  */
 async function fetchRate(currency, date) {
-  if (currency === "USD") return { rate_to_base: 1, rate_date: date };
-  const url = `https://api.frankfurter.dev/v2/rates?date=${date}&base=${currency}&quotes=USD`;
+  if (currency === "USD") return { rateToBase: 1, rateDate: date };
+  const url = `https://api.frankfurter.dev/v1/${date}?from=${currency}&to=USD`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
@@ -53,10 +53,10 @@ async function fetchRate(currency, date) {
     clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!Array.isArray(data) || !data[0] || typeof data[0].rate !== "number") {
+    if (!data || typeof data.rates?.USD !== "number") {
       throw new Error("Unexpected response shape");
     }
-    return { rateToBase: data[0].rate, rateDate: data[0].date };
+    return { rateToBase: data.rates.USD, rateDate: data.date };
   } catch {
     clearTimeout(timer);
     throw new Error("Couldn't fetch the exchange rate — try again.");
