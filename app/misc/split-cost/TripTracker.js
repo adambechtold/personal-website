@@ -183,13 +183,17 @@ export default function TripTracker({ initialExpenses }) {
    * @param {Object} exp - Expense row.
    */
   function startEdit(exp) {
+    const toDateStr = (d) =>
+      typeof d === "string" ? d : d.toISOString().slice(0, 10);
     setEditId(exp.id);
     setEditForm({
       paid_by: exp.paid_by,
       amount: parseFloat(exp.amount).toString(),
       description: exp.description,
-      expense_date: exp.expense_date,
+      expense_date: toDateStr(exp.expense_date),
       currency: exp.currency || "USD",
+      rate_to_base: parseFloat(exp.rate_to_base),
+      rate_date: toDateStr(exp.rate_date),
       adam_shares: exp.adam_shares.toString(),
       matt_shares: exp.matt_shares.toString(),
       adam_adjustment: parseFloat(exp.adam_adjustment).toString(),

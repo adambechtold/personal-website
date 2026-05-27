@@ -96,7 +96,7 @@ export async function addExpense(data) {
   const amount = parseFloat(data.amount);
   const description = data.description || "";
   const expenseDate = data.expense_date;
-  const currency = data.currency || "EUR";
+  const currency = data.currency || "USD";
   const adamShares = parseInt(data.adam_shares) || 0;
   const mattShares = parseInt(data.matt_shares) || 0;
   const adamAdjustment = parseFloat(data.adam_adjustment) || 0;
@@ -135,14 +135,15 @@ export async function updateExpense(id, data) {
   const amount = parseFloat(data.amount);
   const description = data.description || "";
   const expenseDate = data.expense_date;
-  const currency = data.currency || "EUR";
+  const currency = data.currency || "USD";
+  const rateToBase = parseFloat(data.rate_to_base) || 1;
+  const rateDate = data.rate_date || expenseDate;
   const adamShares = parseInt(data.adam_shares) || 0;
   const mattShares = parseInt(data.matt_shares) || 0;
   const adamAdjustment = parseFloat(data.adam_adjustment) || 0;
   const mattAdjustment = parseFloat(data.matt_adjustment) || 0;
 
   validate(paidBy, amount, expenseDate, adamShares, mattShares);
-  const { rateToBase, rateDate } = await fetchRate(currency, expenseDate);
   await ensureSchema();
   await sql`
     UPDATE expenses SET
