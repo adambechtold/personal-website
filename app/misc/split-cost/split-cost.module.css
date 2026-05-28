@@ -437,6 +437,35 @@
   color: #aaa;
 }
 
+.sharesGrid {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 0.4rem 0.5rem;
+  align-items: center;
+}
+
+.sharesColHeader {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  color: #555;
+}
+
+.sharesRowLabel {
+  font-size: 0.8rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.sharesCostValue {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-top: 1px solid #eee;
+  padding-top: 0.35rem;
+}
+
 .currencyAmountRow {
   display: grid;
   grid-template-columns: 5rem 1fr;

@@ -454,55 +454,70 @@ function ExpenseFields({ form, setForm, styles }) {
           required
         />
       </div>
-      <div className={styles.sharesRow}>
-        <div className={styles.shareCol}>
-          <label className={styles.label}>Adam shares</label>
-          <input
-            className={styles.sharesInput}
-            type="number"
-            min="0"
-            step="1"
-            value={form.adam_shares}
-            onChange={(e) => setForm({ ...form, adam_shares: e.target.value })}
-          />
-        </div>
-        <div className={styles.shareCol}>
-          <label className={styles.label}>Matt shares</label>
-          <input
-            className={styles.sharesInput}
-            type="number"
-            min="0"
-            step="1"
-            value={form.matt_shares}
-            onChange={(e) => setForm({ ...form, matt_shares: e.target.value })}
-          />
-        </div>
-        <div className={styles.shareCol}>
-          <label className={styles.label}>Adam +/-</label>
-          <input
-            className={styles.adjustmentInput}
-            type="number"
-            step="0.01"
-            placeholder="+/- $"
-            value={form.adam_adjustment}
-            onChange={(e) =>
-              setForm({ ...form, adam_adjustment: e.target.value })
-            }
-          />
-        </div>
-        <div className={styles.shareCol}>
-          <label className={styles.label}>Matt +/-</label>
-          <input
-            className={styles.adjustmentInput}
-            type="number"
-            step="0.01"
-            placeholder="+/- $"
-            value={form.matt_adjustment}
-            onChange={(e) =>
-              setForm({ ...form, matt_adjustment: e.target.value })
-            }
-          />
-        </div>
+      <div className={styles.sharesGrid}>
+        {/* header */}
+        <div />
+        <div className={styles.sharesColHeader}>Adam</div>
+        <div className={styles.sharesColHeader}>Matt</div>
+        {/* shares row */}
+        <div className={styles.sharesRowLabel}>Shares</div>
+        <input
+          className={styles.sharesInput}
+          type="number"
+          min="0"
+          step="1"
+          value={form.adam_shares}
+          onChange={(e) => setForm({ ...form, adam_shares: e.target.value })}
+        />
+        <input
+          className={styles.sharesInput}
+          type="number"
+          min="0"
+          step="1"
+          value={form.matt_shares}
+          onChange={(e) => setForm({ ...form, matt_shares: e.target.value })}
+        />
+        {/* adjustment row */}
+        <div className={styles.sharesRowLabel}>+/-</div>
+        <input
+          className={styles.adjustmentInput}
+          type="number"
+          step="0.01"
+          placeholder="0"
+          value={form.adam_adjustment}
+          onChange={(e) => setForm({ ...form, adam_adjustment: e.target.value })}
+        />
+        <input
+          className={styles.adjustmentInput}
+          type="number"
+          step="0.01"
+          placeholder="0"
+          value={form.matt_adjustment}
+          onChange={(e) => setForm({ ...form, matt_adjustment: e.target.value })}
+        />
+        {/* cost preview row */}
+        {(() => {
+          const amt = parseFloat(form.amount) || 0;
+          const aShares = parseInt(form.adam_shares) || 0;
+          const mShares = parseInt(form.matt_shares) || 0;
+          const aAdj = parseFloat(form.adam_adjustment) || 0;
+          const mAdj = parseFloat(form.matt_adjustment) || 0;
+          const total = aShares + mShares;
+          const remaining = amt - aAdj - mAdj;
+          const aCost = total > 0 ? (aShares / total) * remaining + aAdj : aAdj;
+          const mCost = total > 0 ? (mShares / total) * remaining + mAdj : mAdj;
+          return (
+            <>
+              <div className={styles.sharesRowLabel}>Cost</div>
+              <div className={styles.sharesCostValue}>
+                {formatCurrency(aCost, currency)}
+              </div>
+              <div className={styles.sharesCostValue}>
+                {formatCurrency(mCost, currency)}
+              </div>
+            </>
+          );
+        })()}
       </div>
     </>
   );
