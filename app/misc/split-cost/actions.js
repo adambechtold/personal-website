@@ -36,15 +36,13 @@ export async function ensureSchema() {
 }
 
 /**
- * Fetches the USD exchange rate for a currency on a given date.
- * Returns {rate_to_base: 1, rate_date: date} immediately for USD.
+ * Fetches the USD exchange rate for a non-USD currency on a given date.
  * Throws a user-facing error on any failure so nothing is saved with a bad rate.
- * @param {string} currency - ISO 4217 currency code.
+ * @param {string} currency - ISO 4217 currency code (must not be USD).
  * @param {string} date - YYYY-MM-DD date string.
- * @return {Promise<{rate_to_base: number, rate_date: string}>}
+ * @return {Promise<{rateToBase: number, rateDate: string}>}
  */
 async function fetchRate(currency, date) {
-  if (currency === "USD") return { rateToBase: 1, rateDate: date };
   const url = `https://api.frankfurter.dev/v1/${date}?from=${currency}&to=USD`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
@@ -103,7 +101,10 @@ export async function addExpense(data) {
   const mattAdjustment = parseFloat(data.matt_adjustment) || 0;
 
   validate(paidBy, amount, expenseDate, adamShares, mattShares);
-  const { rateToBase, rateDate } = await fetchRate(currency, expenseDate);
+  const { rateToBase, rateDate } =
+    currency === "USD"
+      ? { rateToBase: 1, rateDate: expenseDate }
+      : await fetchRate(currency, expenseDate);
   await ensureSchema();
   await sql`
     INSERT INTO expenses
