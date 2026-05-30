@@ -2,6 +2,7 @@
 
 import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
+import { buildRateUrl, parseRateResponse, resolveRate } from "./rate-utils";
 
 /**
  * Creates or migrates the expenses table.
@@ -33,6 +34,18 @@ export async function ensureSchema() {
   await sql`ALTER TABLE expenses ALTER COLUMN currency     SET NOT NULL`;
   await sql`ALTER TABLE expenses ALTER COLUMN rate_to_base SET NOT NULL`;
   await sql`ALTER TABLE expenses ALTER COLUMN rate_date    SET NOT NULL`;
+  // Daily rate cache, keyed by the requested expense date (as_of_date). rate_date
+  // is the actual market date the rate is from, which may differ on weekends/holidays.
+  await sql`
+    CREATE TABLE IF NOT EXISTS rates (
+      currency      TEXT          NOT NULL,
+      as_of_date    DATE          NOT NULL,
+      rate_date     DATE          NOT NULL,
+      rate_to_base  NUMERIC(14,6) NOT NULL,
+      fetched_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+      PRIMARY KEY (currency, as_of_date)
+    )
+  `;
 }
 
 /**
@@ -45,21 +58,87 @@ export async function ensureSchema() {
  */
 async function fetchRate(currency, date) {
   if (currency === "USD") return { rateToBase: 1, rateDate: date };
-  const url = `https://api.frankfurter.dev/v1/${date}?from=${currency}&to=USD`;
+  const url = buildRateUrl(currency, date);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!data || typeof data.rates?.USD !== "number") {
-      throw new Error("Unexpected response shape");
-    }
-    return { rateToBase: data.rates.USD, rateDate: data.date };
+    return parseRateResponse(await res.json());
   } catch {
     clearTimeout(timer);
     throw new Error("Couldn't fetch the exchange rate — try again.");
+  }
+}
+
+/**
+ * Reads a cached rate for a currency on a requested date.
+ * @param {string} currency - ISO 4217 currency code.
+ * @param {string} date - YYYY-MM-DD requested (expense) date.
+ * @return {Promise<?{rateToBase: number, rateDate: string}>} Cached rate or null on miss.
+ */
+async function readRateCache(currency, date) {
+  const { rows } = await sql`
+    SELECT rate_to_base, rate_date FROM rates
+    WHERE currency = ${currency} AND as_of_date = ${date}
+  `;
+  if (!rows.length) return null;
+  const row = rows[0];
+  const rateDate =
+    row.rate_date instanceof Date
+      ? row.rate_date.toISOString().slice(0, 10)
+      : String(row.rate_date).slice(0, 10);
+  return { rateToBase: parseFloat(row.rate_to_base), rateDate };
+}
+
+/**
+ * Writes a fetched rate into the cache. Concurrent prefetch + add races are
+ * harmless: the first write wins via ON CONFLICT DO NOTHING.
+ * @param {string} currency - ISO 4217 currency code.
+ * @param {string} date - YYYY-MM-DD requested (expense) date.
+ * @param {{rateToBase: number, rateDate: string}} rate - The fetched rate.
+ * @return {Promise<void>}
+ */
+async function writeRateCache(currency, date, { rateToBase, rateDate }) {
+  await sql`
+    INSERT INTO rates (currency, as_of_date, rate_date, rate_to_base)
+    VALUES (${currency}, ${date}, ${rateDate}, ${rateToBase})
+    ON CONFLICT (currency, as_of_date) DO NOTHING
+  `;
+}
+
+/**
+ * Cache-first rate lookup used by both prefetch and expense writes.
+ * Assumes the schema already exists (call ensureSchema first).
+ * @param {string} currency - ISO 4217 currency code.
+ * @param {string} date - YYYY-MM-DD expense date.
+ * @return {Promise<{rateToBase: number, rateDate: string}>}
+ */
+function getRate(currency, date) {
+  return resolveRate(currency, date, {
+    readCache: readRateCache,
+    writeCache: writeRateCache,
+    fetchRate,
+  });
+}
+
+/**
+ * Warms the rate cache for a currency/date without writing an expense.
+ * Called from the client on page load and when the date input changes so the
+ * subsequent add is instant. No-ops for USD. Errors are intentionally swallowed —
+ * a failed prefetch just means the add path will fetch on demand.
+ * @param {string} currency - ISO 4217 currency code.
+ * @param {string} date - YYYY-MM-DD expense date.
+ * @return {Promise<void>}
+ */
+export async function ensureRate(currency, date) {
+  if (!currency || currency === "USD" || !date) return;
+  try {
+    await ensureSchema();
+    await getRate(currency, date);
+  } catch {
+    // Best-effort warm-up; the add path will retry the fetch if needed.
   }
 }
 
@@ -103,8 +182,8 @@ export async function addExpense(data) {
   const mattAdjustment = parseFloat(data.matt_adjustment) || 0;
 
   validate(paidBy, amount, expenseDate, adamShares, mattShares);
-  const { rateToBase, rateDate } = await fetchRate(currency, expenseDate);
   await ensureSchema();
+  const { rateToBase, rateDate } = await getRate(currency, expenseDate);
   await sql`
     INSERT INTO expenses
       (paid_by, amount, description, expense_date, currency, rate_to_base, rate_date,
