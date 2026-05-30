@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./split-cost.module.css";
-import { addExpense, updateExpense, deleteExpense } from "./actions";
+import {
+  addExpense,
+  updateExpense,
+  deleteExpense,
+  ensureRate,
+} from "./actions";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -115,8 +120,20 @@ export default function TripTracker({ initialExpenses }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
-    if (saved === "adam" || saved === "matt") setForm((f) => ({ ...f, paid_by: saved }));
+    if (saved === "adam" || saved === "matt")
+      setForm((f) => ({ ...f, paid_by: saved }));
   }, []);
+
+  // Warm the rate cache on load and whenever the currency or date changes, so the
+  // add is instant instead of waiting on the exchange-rate API. Debounced to avoid
+  // a request per keystroke while scrubbing the date input. No-ops for USD.
+  useEffect(() => {
+    if (form.currency === "USD") return;
+    const timer = setTimeout(() => {
+      ensureRate(form.currency, form.expense_date).catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [form.currency, form.expense_date]);
 
   const settlement = computeSettlement(initialExpenses);
   const { adamNet } = settlement;
@@ -252,17 +269,13 @@ export default function TripTracker({ initialExpenses }) {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Add Expense</h2>
           <form onSubmit={handleAdd} className={styles.expenseForm}>
-            <ExpenseFields
-              form={form}
-              setForm={setForm}
-              styles={styles}
-            />
+            <ExpenseFields form={form} setForm={setForm} styles={styles} />
             <button
               className={styles.submitBtn}
               type="submit"
               disabled={pending}
             >
-              {pending ? "Fetching rate…" : "Add Expense"}
+              {pending ? "Saving…" : "Add Expense"}
             </button>
           </form>
         </div>
@@ -296,7 +309,7 @@ export default function TripTracker({ initialExpenses }) {
                         type="submit"
                         disabled={pending}
                       >
-                        {pending ? "Fetching rate…" : "Save"}
+                        {pending ? "Saving…" : "Save"}
                       </button>
                       <button
                         className={styles.cancelBtn}
@@ -407,7 +420,9 @@ function ExpenseFields({ form, setForm, styles }) {
             <button
               key={c}
               type="button"
-              className={`${styles.personBtn} ${currency === c ? styles.personBtnActive : ""}`}
+              className={`${styles.personBtn} ${
+                currency === c ? styles.personBtnActive : ""
+              }`}
               onClick={() => setForm({ ...form, currency: c })}
             >
               {CURRENCY_FLAGS[c]} {c}
@@ -433,7 +448,9 @@ function ExpenseFields({ form, setForm, styles }) {
             <button
               key={p}
               type="button"
-              className={`${styles.personBtn} ${form.paid_by === p ? styles.personBtnActive : ""}`}
+              className={`${styles.personBtn} ${
+                form.paid_by === p ? styles.personBtnActive : ""
+              }`}
               onClick={() => {
                 setForm({ ...form, paid_by: p });
                 localStorage.setItem("trip-person", p);
@@ -485,7 +502,9 @@ function ExpenseFields({ form, setForm, styles }) {
           step="0.01"
           placeholder="0"
           value={form.adam_adjustment}
-          onChange={(e) => setForm({ ...form, adam_adjustment: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, adam_adjustment: e.target.value })
+          }
         />
         <input
           className={styles.adjustmentInput}
@@ -493,7 +512,9 @@ function ExpenseFields({ form, setForm, styles }) {
           step="0.01"
           placeholder="0"
           value={form.matt_adjustment}
-          onChange={(e) => setForm({ ...form, matt_adjustment: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, matt_adjustment: e.target.value })
+          }
         />
         {/* cost preview row */}
         {(() => {
