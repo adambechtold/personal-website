@@ -188,7 +188,7 @@ export default function TripTracker({ initialExpenses }) {
     setEditId(exp.id);
     setEditForm({
       paid_by: exp.paid_by,
-      amount: parseFloat(exp.amount).toString(),
+      amount: parseFloat(exp.amount).toFixed(2),
       description: exp.description,
       expense_date: toDateStr(exp.expense_date),
       currency: exp.currency || "USD",
@@ -397,6 +397,12 @@ function ExpenseFields({ form, setForm, styles }) {
           placeholder="0.00"
           value={form.amount}
           onChange={(e) => setForm({ ...form, amount: e.target.value })}
+          onBlur={(e) => {
+            const parsed = parseFloat(e.target.value);
+            if (!isNaN(parsed)) {
+              setForm({ ...form, amount: parsed.toFixed(2) });
+            }
+          }}
           required
         />
       </div>
