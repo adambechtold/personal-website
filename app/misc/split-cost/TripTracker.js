@@ -238,10 +238,10 @@ export default function TripTracker({ initialExpenses }) {
 
         {/* Expense List */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            Expenses ({visibleExpenses.length})
-          </h2>
-          <div className={styles.listControls}>
+          <div className={styles.expenseHeader}>
+            <h2 className={styles.sectionTitle}>
+              Expenses ({visibleExpenses.length})
+            </h2>
             <div className={styles.personSelector}>
               {[
                 ["all", "All"],
@@ -260,6 +260,8 @@ export default function TripTracker({ initialExpenses }) {
                 </button>
               ))}
             </div>
+          </div>
+          <div className={styles.listControls}>
             <div className={styles.personSelector}>
               {[
                 ["date_added", "Date Added"],
