@@ -262,7 +262,6 @@ export default function TripTracker({ initialExpenses }) {
               {[
                 ["date_added", "Date Added"],
                 ["expense_date", "Expense Date"],
-                ["amount", "Amount"],
               ].map(([field, label]) => {
                 const active = sort.field === field;
                 return (
