@@ -1,0 +1,37 @@
+name: CI
+
+# Runs the fast quality gate (formatting, lint, unit tests) on every PR into
+# main and on every push to main. The Next.js build is intentionally NOT run
+# here — Vercel already builds every PR via its preview deployment, so this
+# job stays fast and avoids the Google-Fonts fetch the build requires.
+#
+# Make this job a required status check in branch protection so red can't merge.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    name: format, lint, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check formatting (prettier)
+        run: npm run check-format
+
+      - name: Lint (eslint)
+        run: npm run check-lint
+
+      - name: Unit tests (vitest)
+        run: npm run test:unit
