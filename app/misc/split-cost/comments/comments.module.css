@@ -1,0 +1,256 @@
+/* ---- Trigger (shared by both shells) ---- */
+.inlineWrap {
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f0f0f0;
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 36px;
+  padding: 0.2rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: #777;
+  font-size: 0.8rem;
+}
+.triggerActive {
+  color: var(--accent-color);
+}
+.triggerChip {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.teaser {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #999;
+}
+
+/* ---- Thread body (shared) ---- */
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.empty {
+  font-size: 0.8rem;
+  color: #999;
+  margin: 0.2rem 0;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.item {
+  background: #f7f9ff;
+  border: 1px solid #e6eefc;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+}
+.itemHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.author {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #333;
+}
+.meta {
+  font-size: 0.72rem;
+  color: #999;
+}
+.body {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.itemActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+}
+.linkBtn,
+.linkBtnDanger {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.74rem;
+  cursor: pointer;
+  color: #888;
+}
+.linkBtn:hover {
+  color: var(--accent-color);
+}
+.linkBtnDanger:hover {
+  color: #e25555;
+}
+.linkBtn:disabled,
+.linkBtnDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Inline edit of a comment ---- */
+.editRow {
+  margin-top: 0.3rem;
+}
+.editArea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  resize: vertical;
+}
+.editBtns {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+}
+
+/* ---- Composer (shared) ---- */
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.composerTop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.asLabel {
+  font-size: 0.74rem;
+  color: #999;
+}
+.authorToggle {
+  display: flex;
+  gap: 0.3rem;
+}
+.authorBtn {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+  color: #777;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+.authorBtnActive {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: #f0f6ff;
+}
+.composerRow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-end;
+}
+.composerInput {
+  flex: 1;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: none;
+  max-height: 120px;
+}
+.sendBtn {
+  flex-shrink: 0;
+  padding: 0.45rem 0.85rem;
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Inline shell (A) ---- */
+.inlinePanel {
+  margin-top: 0.55rem;
+}
+
+/* ---- Sheet shell (B) ---- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  /* Mobile-first: dock to the bottom as a sheet. */
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 1rem 1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.sheetTitle {
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sheetClose {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #888;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+}
+
+/* Desktop: center as a modal with rounded corners instead of a docked sheet. */
+@media (min-width: 600px) {
+  .backdrop {
+    align-items: center;
+  }
+  .sheet {
+    border-radius: 14px;
+    max-height: 80vh;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  }
+}

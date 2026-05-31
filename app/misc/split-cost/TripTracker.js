@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./split-cost.module.css";
 import { addExpense, updateExpense, deleteExpense } from "./actions";
+import Comments from "./comments/Comments";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -107,13 +108,16 @@ function formatDate(dateStr) {
  * @param {{initialExpenses: Array}} props
  * @return {React.ReactElement}
  */
-export default function TripTracker({ initialExpenses }) {
+export default function TripTracker({ initialExpenses, commentsByExpense = {} }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [pending, setPending] = useState(false);
   const [filterUser, setFilterUser] = useState("all");
   const [sort, setSort] = useState({ field: "date_added", dir: "desc" });
+  // Prototype toggle: swap the comment presentation without touching the
+  // shared data/thread layers. "inline" = accordion in card, "sheet" = overlay.
+  const [commentMode, setCommentMode] = useState("inline");
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");

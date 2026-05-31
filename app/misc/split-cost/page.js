@@ -2,6 +2,7 @@ import React from "react";
 import { sql } from "@vercel/postgres";
 import TripTracker from "./TripTracker";
 import { ensureSchema } from "./actions";
+import { getCommentsByExpense } from "./comments/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -26,5 +27,11 @@ export default async function SplitCostPage() {
         ? row.expense_date.toISOString().slice(0, 10)
         : String(row.expense_date).slice(0, 10),
   }));
-  return <TripTracker initialExpenses={expenses} />;
+  const commentsByExpense = await getCommentsByExpense();
+  return (
+    <TripTracker
+      initialExpenses={expenses}
+      commentsByExpense={commentsByExpense}
+    />
+  );
 }
