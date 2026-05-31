@@ -276,6 +276,11 @@
   margin-bottom: 1.75rem;
 }
 
+.section + .section {
+  border-top: 1px solid #eee;
+  padding-top: 2rem;
+}
+
 .sectionTitle {
   font-size: 1rem;
   font-weight: 600;
