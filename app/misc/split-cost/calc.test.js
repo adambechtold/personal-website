@@ -124,11 +124,10 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(100, 10);
   });
 
-  // 1.7 — sub-cent conservation: calc.js returns raw floats (no rounding applied).
-  // The display-level rounding policy (which person absorbs a leftover sub-cent) is
-  // not yet defined; see Open Questions in the final report.
-  it("1.7 sub-cent conservation: $0.01 split 1:1 sums to the full amount", () => {
-    // each person gets 0.005; no rounding in calc.js
+  // 1.7 — sub-cent conservation without paid_by: no rounding is applied when
+  // paid_by is absent (e.g. in-form cost preview), so raw floats are returned.
+  it("1.7 sub-cent conservation (no paid_by): $0.01 split 1:1 sums to the full amount", () => {
+    // each person gets 0.005 as a raw float; no payer rounding applied
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
       adam_shares: "1",
@@ -139,7 +138,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  it("1.7 sub-cent conservation: $0.01 split 1:2 sums to the full amount", () => {
+  it("1.7 sub-cent conservation (no paid_by): $0.01 split 1:2 sums to the full amount", () => {
     // adam gets 0.00333…, matt gets 0.00666…; sum = 0.01
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
@@ -149,6 +148,75 @@ describe("computePortions", () => {
       matt_adjustment: "0",
     });
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
+  });
+
+  // 1.7 — payer-gets-the-extra-cent rounding policy (authorized by Adam Bechtold).
+  // When paid_by is set, the non-payer's portion is rounded to the nearest cent and
+  // the payer's portion is the exact remainder, so the payer recoups any sub-cent
+  // fraction in the settlement rather than absorbing it.
+  it("1.7 rounding: adam paid — matt owes the full cent on a $0.01 1:1 split", () => {
+    // raw portions are $0.005 each; Matt (non-payer) rounds up to $0.01; Adam gets $0.00
+    // In settlement Adam paid $0.01, owes $0.00 → Adam receives the full cent back
+    const { adamPortion, mattPortion } = computePortions({
+      amount: "0.01",
+      paid_by: "adam",
+      adam_shares: "1",
+      matt_shares: "1",
+      adam_adjustment: "0",
+      matt_adjustment: "0",
+    });
+    expect(mattPortion).toBeCloseTo(0.01, 10);
+    expect(adamPortion).toBeCloseTo(0.0, 10);
+    expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
+  });
+
+  it("1.7 rounding: matt paid — adam owes the full cent on a $0.01 1:1 split", () => {
+    // Adam (non-payer) rounds up to $0.01; Matt gets $0.00
+    const { adamPortion, mattPortion } = computePortions({
+      amount: "0.01",
+      paid_by: "matt",
+      adam_shares: "1",
+      matt_shares: "1",
+      adam_adjustment: "0",
+      matt_adjustment: "0",
+    });
+    expect(adamPortion).toBeCloseTo(0.01, 10);
+    expect(mattPortion).toBeCloseTo(0.0, 10);
+    expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
+  });
+
+  it("1.7 rounding: even-cent splits are unaffected by the payer rule", () => {
+    // $100 split 1:1 divides exactly; no rounding needed regardless of payer
+    const { adamPortion, mattPortion } = computePortions({
+      amount: "100.00",
+      paid_by: "adam",
+      adam_shares: "1",
+      matt_shares: "1",
+      adam_adjustment: "0",
+      matt_adjustment: "0",
+    });
+    expect(adamPortion).toBeCloseTo(50, 10);
+    expect(mattPortion).toBeCloseTo(50, 10);
+  });
+
+  it("1.7 rounding: conservation holds with paid_by set for hundreds of random cent amounts", () => {
+    for (let i = 0; i < 500; i++) {
+      // Use whole-cent amounts (input data is always in cents per validate())
+      const cents = Math.floor(Math.random() * 100000);
+      const amount = cents / 100;
+      const payer = Math.random() < 0.5 ? "adam" : "matt";
+      const adamShares = Math.floor(Math.random() * 5) + 1;
+      const mattShares = Math.floor(Math.random() * 5) + 1;
+      const { adamPortion, mattPortion } = computePortions({
+        amount,
+        paid_by: payer,
+        adam_shares: adamShares,
+        matt_shares: mattShares,
+        adam_adjustment: "0",
+        matt_adjustment: "0",
+      });
+      expect(adamPortion + mattPortion).toBeCloseTo(amount, 2);
+    }
   });
 });
 
@@ -377,7 +445,9 @@ describe("computeSettlement", () => {
   });
 
   it("1.7 repeated $0.01 expenses do not leak cents in settlement totals", () => {
-    // 100 × $0.01 paid by adam, split 1:1 → adamNet should be 0.50 and zero-sum
+    // 100 × $0.01 paid by adam, split 1:1
+    // Payer rounding: each expense → adam portion $0.00, matt portion $0.01
+    // adamPaid=1.00, adamOwed=0.00, mattOwed=1.00 → adamNet=1.00 (Matt owes Adam $1)
     const expenses = Array.from({ length: 100 }, () => ({
       paid_by: "adam",
       amount: "0.01",
@@ -389,7 +459,6 @@ describe("computeSettlement", () => {
     }));
     const s = computeSettlement(expenses);
     expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
-    // 100 × $0.01 paid, each owes half → adamNet = 1.00 - 0.50 = 0.50
-    expect(s.adamNet).toBeCloseTo(0.5, 10);
+    expect(s.adamNet).toBeCloseTo(1.0, 10);
   });
 });
