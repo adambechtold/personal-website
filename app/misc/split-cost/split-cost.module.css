@@ -283,6 +283,17 @@
   color: #1a1a1a;
 }
 
+.expenseListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.expenseListHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
 .expenseForm {
   display: flex;
   flex-direction: column;

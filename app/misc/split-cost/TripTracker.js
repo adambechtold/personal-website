@@ -112,6 +112,7 @@ export default function TripTracker({ initialExpenses }) {
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [pending, setPending] = useState(false);
+  const [filterUser, setFilterUser] = useState("all");
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
@@ -269,13 +270,27 @@ export default function TripTracker({ initialExpenses }) {
 
         {/* Expense List */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            Expenses ({initialExpenses.length})
-          </h2>
-          {initialExpenses.length === 0 && (
+          <div className={styles.expenseListHeader}>
+            <h2 className={styles.sectionTitle}>
+              Expenses ({filterUser === "all" ? initialExpenses.length : initialExpenses.filter((e) => e.paid_by === filterUser).length})
+            </h2>
+            <div className={styles.personSelector}>
+              {[["all", "All"], ["adam", "Adam"], ["matt", "Matt"]].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`${styles.personBtn} ${filterUser === value ? styles.personBtnActive : ""}`}
+                  onClick={() => setFilterUser(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {initialExpenses.filter((e) => filterUser === "all" || e.paid_by === filterUser).length === 0 && (
             <p className={styles.empty}>No expenses yet.</p>
           )}
-          {initialExpenses.map((exp) => {
+          {initialExpenses.filter((e) => filterUser === "all" || e.paid_by === filterUser).map((exp) => {
             const { adamPortion, mattPortion } = computePortions(exp);
             const rate = parseFloat(exp.rate_to_base) || 1;
             const currency = exp.currency || "USD";
