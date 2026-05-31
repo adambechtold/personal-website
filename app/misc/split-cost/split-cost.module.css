@@ -294,6 +294,12 @@
   margin-bottom: 0;
 }
 
+.sortBar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
 .expenseForm {
   display: flex;
   flex-direction: column;

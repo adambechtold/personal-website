@@ -113,6 +113,7 @@ export default function TripTracker({ initialExpenses }) {
   const [editForm, setEditForm] = useState(null);
   const [pending, setPending] = useState(false);
   const [filterUser, setFilterUser] = useState("all");
+  const [sort, setSort] = useState({ field: "date_added", dir: "desc" });
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
@@ -202,6 +203,25 @@ export default function TripTracker({ initialExpenses }) {
     });
   }
 
+  const visibleExpenses = [...initialExpenses]
+    .filter((e) => filterUser === "all" || e.paid_by === filterUser)
+    .sort((a, b) => {
+      let av, bv;
+      if (sort.field === "date_added") {
+        av = a.id;
+        bv = b.id;
+      } else if (sort.field === "expense_date") {
+        av = a.expense_date;
+        bv = b.expense_date;
+      } else {
+        av = parseFloat(a.amount) * (parseFloat(a.rate_to_base) || 1);
+        bv = parseFloat(b.amount) * (parseFloat(b.rate_to_base) || 1);
+      }
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -272,7 +292,7 @@ export default function TripTracker({ initialExpenses }) {
         <div className={styles.section}>
           <div className={styles.expenseListHeader}>
             <h2 className={styles.sectionTitle}>
-              Expenses ({filterUser === "all" ? initialExpenses.length : initialExpenses.filter((e) => e.paid_by === filterUser).length})
+              Expenses ({visibleExpenses.length})
             </h2>
             <div className={styles.personSelector}>
               {[["all", "All"], ["adam", "Adam"], ["matt", "Matt"]].map(([value, label]) => (
@@ -287,10 +307,34 @@ export default function TripTracker({ initialExpenses }) {
               ))}
             </div>
           </div>
-          {initialExpenses.filter((e) => filterUser === "all" || e.paid_by === filterUser).length === 0 && (
+          <div className={styles.sortBar}>
+            {[
+              ["date_added", "Date Added"],
+              ["expense_date", "Expense Date"],
+              ["amount", "Amount"],
+            ].map(([field, label]) => {
+              const active = sort.field === field;
+              return (
+                <button
+                  key={field}
+                  type="button"
+                  className={`${styles.personBtn} ${active ? styles.personBtnActive : ""}`}
+                  onClick={() =>
+                    setSort(active
+                      ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
+                      : { field, dir: "desc" }
+                    )
+                  }
+                >
+                  {label} {active ? (sort.dir === "desc" ? "↓" : "↑") : ""}
+                </button>
+              );
+            })}
+          </div>
+          {visibleExpenses.length === 0 && (
             <p className={styles.empty}>No expenses yet.</p>
           )}
-          {initialExpenses.filter((e) => filterUser === "all" || e.paid_by === filterUser).map((exp) => {
+          {visibleExpenses.map((exp) => {
             const { adamPortion, mattPortion } = computePortions(exp);
             const rate = parseFloat(exp.rate_to_base) || 1;
             const currency = exp.currency || "USD";
