@@ -290,10 +290,10 @@ export default function TripTracker({ initialExpenses }) {
 
         {/* Expense List */}
         <div className={styles.section}>
-          <div className={styles.expenseListHeader}>
-            <h2 className={styles.sectionTitle}>
-              Expenses ({visibleExpenses.length})
-            </h2>
+          <h2 className={styles.sectionTitle}>
+            Expenses ({visibleExpenses.length})
+          </h2>
+          <div className={styles.listControls}>
             <div className={styles.personSelector}>
               {[["all", "All"], ["adam", "Adam"], ["matt", "Matt"]].map(([value, label]) => (
                 <button
@@ -306,30 +306,30 @@ export default function TripTracker({ initialExpenses }) {
                 </button>
               ))}
             </div>
-          </div>
-          <div className={styles.sortBar}>
-            {[
-              ["date_added", "Date Added"],
-              ["expense_date", "Expense Date"],
-              ["amount", "Amount"],
-            ].map(([field, label]) => {
-              const active = sort.field === field;
-              return (
-                <button
-                  key={field}
-                  type="button"
-                  className={`${styles.personBtn} ${active ? styles.personBtnActive : ""}`}
-                  onClick={() =>
-                    setSort(active
-                      ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
-                      : { field, dir: "desc" }
-                    )
-                  }
-                >
-                  {label} {active ? (sort.dir === "desc" ? "↓" : "↑") : ""}
-                </button>
-              );
-            })}
+            <div className={styles.personSelector}>
+              {[
+                ["date_added", "Date Added"],
+                ["expense_date", "Expense Date"],
+                ["amount", "Amount"],
+              ].map(([field, label]) => {
+                const active = sort.field === field;
+                return (
+                  <button
+                    key={field}
+                    type="button"
+                    className={`${styles.personBtn} ${active ? styles.personBtnActive : ""}`}
+                    onClick={() =>
+                      setSort(active
+                        ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
+                        : { field, dir: "desc" }
+                      )
+                    }
+                  >
+                    {label} {active ? (sort.dir === "desc" ? "↓" : "↑") : ""}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {visibleExpenses.length === 0 && (
             <p className={styles.empty}>No expenses yet.</p>
