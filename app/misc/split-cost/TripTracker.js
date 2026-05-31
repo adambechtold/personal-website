@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./split-cost.module.css";
 import { addExpense, updateExpense, deleteExpense } from "./actions";
-import { computePortions, computeSettlement } from "./calc";
+import { computePortions, computeSettlement, checkInvariants } from "./calc";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -68,6 +68,20 @@ export default function TripTracker({ initialExpenses }) {
     if (saved === "adam" || saved === "matt")
       setForm((f) => ({ ...f, paid_by: saved }));
   }, []);
+
+  // Runtime guardrail: re-check the money invariants on the live rows every
+  // render. At our traffic this is essentially free, and it turns a wrong
+  // settlement into a loud, immediate alarm instead of a silent error we'd
+  // only notice weeks later. See calc.js checkInvariants and TESTING.md.
+  const integrity = checkInvariants(initialExpenses);
+  useEffect(() => {
+    if (!integrity.ok) {
+      console.error(
+        "[split-cost] Money invariant violation:\n" +
+          integrity.violations.join("\n")
+      );
+    }
+  }, [integrity.ok, integrity.violations]);
 
   const settlement = computeSettlement(initialExpenses);
   const { adamNet } = settlement;
@@ -178,47 +192,57 @@ export default function TripTracker({ initialExpenses }) {
         {/* Header */}
         <h1 className={styles.title}>🇮🇪 Ireland Trip</h1>
 
+        {/* Runtime integrity guardrail — only shows when the money math is
+            internally inconsistent, so the displayed totals can't be trusted. */}
+        {!integrity.ok && (
+          <div className={styles.integrityWarning} role="alert">
+            <strong>⚠️ Data integrity check failed.</strong> The numbers below
+            may be wrong — money isn&apos;t adding up. Don&apos;t settle from
+            these figures. (Details in the browser console.)
+          </div>
+        )}
+
         {/* Settlement Summary */}
         <div className={styles.section}>
-        <div className={styles.settlement}>
-          <div className={styles.settlementLine}>{settlementLine}</div>
-          <div className={styles.settlementBreakdown}>
-            <div
-              className={`${styles.settlementRow} ${styles.settlementHeader}`}
-            >
-              <span></span>
-              <span>Paid</span>
-              <span>Share</span>
-              <span>Net</span>
-            </div>
-            <div className={styles.settlementRow}>
-              <span>Adam</span>
-              <span>${settlement.adamPaid.toFixed(2)}</span>
-              <span>${settlement.adamOwed.toFixed(2)}</span>
-              <span
-                className={
-                  settlement.adamNet >= 0 ? styles.positive : styles.negative
-                }
+          <div className={styles.settlement}>
+            <div className={styles.settlementLine}>{settlementLine}</div>
+            <div className={styles.settlementBreakdown}>
+              <div
+                className={`${styles.settlementRow} ${styles.settlementHeader}`}
               >
-                {settlement.adamNet >= 0 ? "+" : ""}$
-                {settlement.adamNet.toFixed(2)}
-              </span>
-            </div>
-            <div className={styles.settlementRow}>
-              <span>Matt</span>
-              <span>${settlement.mattPaid.toFixed(2)}</span>
-              <span>${settlement.mattOwed.toFixed(2)}</span>
-              <span
-                className={
-                  settlement.mattNet >= 0 ? styles.positive : styles.negative
-                }
-              >
-                {settlement.mattNet >= 0 ? "+" : ""}$
-                {settlement.mattNet.toFixed(2)}
-              </span>
+                <span></span>
+                <span>Paid</span>
+                <span>Share</span>
+                <span>Net</span>
+              </div>
+              <div className={styles.settlementRow}>
+                <span>Adam</span>
+                <span>${settlement.adamPaid.toFixed(2)}</span>
+                <span>${settlement.adamOwed.toFixed(2)}</span>
+                <span
+                  className={
+                    settlement.adamNet >= 0 ? styles.positive : styles.negative
+                  }
+                >
+                  {settlement.adamNet >= 0 ? "+" : ""}$
+                  {settlement.adamNet.toFixed(2)}
+                </span>
+              </div>
+              <div className={styles.settlementRow}>
+                <span>Matt</span>
+                <span>${settlement.mattPaid.toFixed(2)}</span>
+                <span>${settlement.mattOwed.toFixed(2)}</span>
+                <span
+                  className={
+                    settlement.mattNet >= 0 ? styles.positive : styles.negative
+                  }
+                >
+                  {settlement.mattNet >= 0 ? "+" : ""}$
+                  {settlement.mattNet.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </div>
 
         {/* Add Expense Form */}

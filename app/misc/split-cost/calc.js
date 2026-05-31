@@ -82,3 +82,53 @@ export function computeSettlement(expenses) {
     mattNet: mattPaid - mattOwed,
   };
 }
+
+/**
+ * Tolerance for runtime invariant checks. These are exact-arithmetic
+ * identities, so any drift beyond floating-point noise is a real bug, not a
+ * rounding artifact. Well below a cent.
+ */
+const INVARIANT_EPSILON = 1e-6;
+
+/**
+ * Runtime guardrail: re-checks the two prime invariants (see TESTING.md) on
+ * whatever data is actually flowing through the app, every render.
+ *
+ * Unlike the unit tests — which check inputs we thought of — this runs on the
+ * live rows a real user is looking at, so a single genuine session becomes a
+ * continuous correctness test. It *detects* corruption (it does not prevent
+ * it): callers should surface any violation loudly rather than render a wrong
+ * "who owes whom".
+ *
+ *   1. Per-expense conservation: adamPortion + mattPortion === amount
+ *      (in the expense's own transaction currency).
+ *   2. Zero-sum settlement:      adamNet + mattNet === 0 (in USD).
+ *
+ * @param {Array<Object>} expenses - All expense rows.
+ * @return {{ok: boolean, violations: string[]}}
+ */
+export function checkInvariants(expenses) {
+  const violations = [];
+  for (const exp of expenses) {
+    const amount = parseFloat(exp.amount) || 0;
+    const { adamPortion, mattPortion } = computePortions(exp);
+    const sum = adamPortion + mattPortion;
+    if (Math.abs(sum - amount) > INVARIANT_EPSILON) {
+      const id = exp.id ?? "(unsaved)";
+      violations.push(
+        `Conservation broken on expense ${id}: ` +
+          `adamPortion (${adamPortion}) + mattPortion (${mattPortion}) ` +
+          `= ${sum}, expected amount ${amount}.`
+      );
+    }
+  }
+  const { adamNet, mattNet } = computeSettlement(expenses);
+  const netSum = adamNet + mattNet;
+  if (Math.abs(netSum) > INVARIANT_EPSILON) {
+    violations.push(
+      `Settlement not zero-sum: adamNet (${adamNet}) + mattNet (${mattNet}) ` +
+        `= ${netSum}, expected 0. Money was created or destroyed.`
+    );
+  }
+  return { ok: violations.length === 0, violations };
+}

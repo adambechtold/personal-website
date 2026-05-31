@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computePortions, computeSettlement } from "./calc";
+import { computePortions, computeSettlement, checkInvariants } from "./calc";
 
 /**
  * GOLDEN PATTERN — Tier 1 (pure money-math).
@@ -127,5 +127,63 @@ describe("computeSettlement", () => {
     expect(s.mattPaid).toBeCloseTo(55, 10); // 50 * 1.1
     expect(s.adamOwed).toBeCloseTo(27.5, 10);
     expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
+  });
+});
+
+describe("checkInvariants (runtime guardrail)", () => {
+  it("passes on healthy mixed-currency data", () => {
+    const expenses = [
+      {
+        id: 1,
+        paid_by: "adam",
+        amount: "100",
+        rate_to_base: "1",
+        adam_shares: "1",
+        matt_shares: "1",
+        adam_adjustment: "0",
+        matt_adjustment: "0",
+      },
+      {
+        id: 2,
+        paid_by: "matt",
+        amount: "50",
+        rate_to_base: "1.1",
+        adam_shares: "2",
+        matt_shares: "1",
+        adam_adjustment: "10",
+        matt_adjustment: "0",
+      },
+    ];
+    const result = checkInvariants(expenses);
+    expect(result.ok).toBe(true);
+    expect(result.violations).toEqual([]);
+  });
+
+  it("passes on an empty list", () => {
+    expect(checkInvariants([])).toEqual({ ok: true, violations: [] });
+  });
+
+  it("catches a row where money is allocated to nobody (0/0 shares)", () => {
+    // This is the historical conservation bug: validate() now blocks it at
+    // persist time, but if such a row ever reaches the reader, the guardrail
+    // must refuse to silently show wrong totals. amount 100 but portions sum 0.
+    const expenses = [
+      {
+        id: 7,
+        paid_by: "adam",
+        amount: "100",
+        rate_to_base: "1",
+        adam_shares: "0",
+        matt_shares: "0",
+        adam_adjustment: "0",
+        matt_adjustment: "0",
+      },
+    ];
+    const result = checkInvariants(expenses);
+    expect(result.ok).toBe(false);
+    // The corrupt row breaks per-expense conservation...
+    expect(result.violations.some((v) => v.includes("expense 7"))).toBe(true);
+    // ...which necessarily breaks zero-sum settlement too.
+    expect(result.violations.some((v) => v.includes("zero-sum"))).toBe(true);
   });
 });

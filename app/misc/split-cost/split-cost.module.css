@@ -23,6 +23,17 @@
   margin: -1rem 0 1.5rem;
 }
 
+.integrityWarning {
+  background: #fdecea;
+  border: 1px solid #e33;
+  border-radius: 6px;
+  color: #a11;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
 .totalSection {
   margin-bottom: 1.5rem;
 }
