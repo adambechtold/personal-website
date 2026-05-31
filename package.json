@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:unit": "vitest run",
     "prepare": "husky install",
     "check-format": "prettier --check .",
     "check-lint": "eslint . --ext .js,.jsx",
@@ -28,6 +29,7 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-react": "^7.33.2",
     "husky": "^8.0.0",
-    "prettier": "^3.0.2"
+    "prettier": "^3.0.2",
+    "vitest": "^4.1.7"
   }
 }

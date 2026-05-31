@@ -276,11 +276,29 @@
   margin-bottom: 1.75rem;
 }
 
+.section + .section {
+  border-top: 1px solid #eee;
+  padding-top: 2rem;
+}
+
 .sectionTitle {
   font-size: 1rem;
   font-weight: 600;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
   color: #1a1a1a;
+}
+
+.expenseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.listControls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
 
 .expenseForm {
