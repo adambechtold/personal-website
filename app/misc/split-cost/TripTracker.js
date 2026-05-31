@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./split-cost.module.css";
 import { addExpense, updateExpense, deleteExpense } from "./actions";
+import { computePortions, computeSettlement } from "./calc";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -39,59 +40,6 @@ function formatCurrency(amount, currency) {
 }
 
 /**
- * Computes adam's and matt's portion for a single expense (in transaction currency).
- * @param {Object} exp - Expense row.
- * @return {{adamPortion: number, mattPortion: number}}
- */
-function computePortions(exp) {
-  const amount = parseFloat(exp.amount);
-  const adamShares = parseInt(exp.adam_shares);
-  const mattShares = parseInt(exp.matt_shares);
-  const adamAdj = parseFloat(exp.adam_adjustment);
-  const mattAdj = parseFloat(exp.matt_adjustment);
-  const totalShares = adamShares + mattShares;
-  const remaining = amount - adamAdj - mattAdj;
-  const adamPortion =
-    totalShares > 0
-      ? (adamShares / totalShares) * remaining + adamAdj
-      : adamAdj;
-  const mattPortion =
-    totalShares > 0
-      ? (mattShares / totalShares) * remaining + mattAdj
-      : mattAdj;
-  return { adamPortion, mattPortion };
-}
-
-/**
- * Computes settlement totals across all expenses, converting to USD via rate_to_base.
- * @param {Array} expenses - All expense rows.
- * @return {{adamPaid: number, mattPaid: number, adamOwed: number, mattOwed: number, adamNet: number, mattNet: number}}
- */
-function computeSettlement(expenses) {
-  let adamPaid = 0;
-  let mattPaid = 0;
-  let adamOwed = 0;
-  let mattOwed = 0;
-  for (const exp of expenses) {
-    const amount = parseFloat(exp.amount);
-    const rate = parseFloat(exp.rate_to_base) || 1;
-    if (exp.paid_by === "adam") adamPaid += amount * rate;
-    else mattPaid += amount * rate;
-    const { adamPortion, mattPortion } = computePortions(exp);
-    adamOwed += adamPortion * rate;
-    mattOwed += mattPortion * rate;
-  }
-  return {
-    adamPaid,
-    mattPaid,
-    adamOwed,
-    mattOwed,
-    adamNet: adamPaid - adamOwed,
-    mattNet: mattPaid - mattOwed,
-  };
-}
-
-/**
  * Formats a YYYY-MM-DD date string for display.
  * @param {string} dateStr - Date string in YYYY-MM-DD format.
  * @return {string} Formatted date (e.g. "Jun 15").
@@ -117,7 +65,8 @@ export default function TripTracker({ initialExpenses }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
-    if (saved === "adam" || saved === "matt") setForm((f) => ({ ...f, paid_by: saved }));
+    if (saved === "adam" || saved === "matt")
+      setForm((f) => ({ ...f, paid_by: saved }));
   }, []);
 
   const settlement = computeSettlement(initialExpenses);
@@ -273,11 +222,7 @@ export default function TripTracker({ initialExpenses }) {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Add Expense</h2>
           <form onSubmit={handleAdd} className={styles.expenseForm}>
-            <ExpenseFields
-              form={form}
-              setForm={setForm}
-              styles={styles}
-            />
+            <ExpenseFields form={form} setForm={setForm} styles={styles} />
             <button
               className={styles.submitBtn}
               type="submit"
@@ -295,11 +240,17 @@ export default function TripTracker({ initialExpenses }) {
           </h2>
           <div className={styles.listControls}>
             <div className={styles.personSelector}>
-              {[["all", "All"], ["adam", "Adam"], ["matt", "Matt"]].map(([value, label]) => (
+              {[
+                ["all", "All"],
+                ["adam", "Adam"],
+                ["matt", "Matt"],
+              ].map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
-                  className={`${styles.personBtn} ${filterUser === value ? styles.personBtnActive : ""}`}
+                  className={`${styles.personBtn} ${
+                    filterUser === value ? styles.personBtnActive : ""
+                  }`}
                   onClick={() => setFilterUser(value)}
                 >
                   {label}
@@ -317,11 +268,14 @@ export default function TripTracker({ initialExpenses }) {
                   <button
                     key={field}
                     type="button"
-                    className={`${styles.personBtn} ${active ? styles.personBtnActive : ""}`}
+                    className={`${styles.personBtn} ${
+                      active ? styles.personBtnActive : ""
+                    }`}
                     onClick={() =>
-                      setSort(active
-                        ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
-                        : { field, dir: "desc" }
+                      setSort(
+                        active
+                          ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
+                          : { field, dir: "desc" }
                       )
                     }
                   >
@@ -472,7 +426,9 @@ function ExpenseFields({ form, setForm, styles }) {
             <button
               key={c}
               type="button"
-              className={`${styles.personBtn} ${currency === c ? styles.personBtnActive : ""}`}
+              className={`${styles.personBtn} ${
+                currency === c ? styles.personBtnActive : ""
+              }`}
               onClick={() => setForm({ ...form, currency: c })}
             >
               {CURRENCY_FLAGS[c]} {c}
@@ -498,7 +454,9 @@ function ExpenseFields({ form, setForm, styles }) {
             <button
               key={p}
               type="button"
-              className={`${styles.personBtn} ${form.paid_by === p ? styles.personBtnActive : ""}`}
+              className={`${styles.personBtn} ${
+                form.paid_by === p ? styles.personBtnActive : ""
+              }`}
               onClick={() => {
                 setForm({ ...form, paid_by: p });
                 localStorage.setItem("trip-person", p);
@@ -550,7 +508,9 @@ function ExpenseFields({ form, setForm, styles }) {
           step="0.01"
           placeholder="0"
           value={form.adam_adjustment}
-          onChange={(e) => setForm({ ...form, adam_adjustment: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, adam_adjustment: e.target.value })
+          }
         />
         <input
           className={styles.adjustmentInput}
@@ -558,19 +518,14 @@ function ExpenseFields({ form, setForm, styles }) {
           step="0.01"
           placeholder="0"
           value={form.matt_adjustment}
-          onChange={(e) => setForm({ ...form, matt_adjustment: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, matt_adjustment: e.target.value })
+          }
         />
         {/* cost preview row */}
         {(() => {
-          const amt = parseFloat(form.amount) || 0;
-          const aShares = parseInt(form.adam_shares) || 0;
-          const mShares = parseInt(form.matt_shares) || 0;
-          const aAdj = parseFloat(form.adam_adjustment) || 0;
-          const mAdj = parseFloat(form.matt_adjustment) || 0;
-          const total = aShares + mShares;
-          const remaining = amt - aAdj - mAdj;
-          const aCost = total > 0 ? (aShares / total) * remaining + aAdj : aAdj;
-          const mCost = total > 0 ? (mShares / total) * remaining + mAdj : mAdj;
+          const { adamPortion: aCost, mattPortion: mCost } =
+            computePortions(form);
           return (
             <>
               <div className={styles.sharesRowLabel}>Cost</div>

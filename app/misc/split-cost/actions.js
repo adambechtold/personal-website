@@ -74,6 +74,9 @@ function validate(paidBy, amount, expenseDate, adamShares, mattShares) {
   if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
   if (!expenseDate) throw new Error("Invalid date");
   if (adamShares < 0 || mattShares < 0) throw new Error("Invalid shares");
+  if (adamShares + mattShares <= 0) {
+    throw new Error("Total shares must be greater than 0");
+  }
 }
 
 /**
@@ -137,14 +140,18 @@ export async function updateExpense(id, data) {
   const description = data.description || "";
   const expenseDate = data.expense_date;
   const currency = data.currency || "USD";
-  const rateToBase = parseFloat(data.rate_to_base) || 1;
-  const rateDate = data.rate_date || expenseDate;
   const adamShares = parseInt(data.adam_shares) || 0;
   const mattShares = parseInt(data.matt_shares) || 0;
   const adamAdjustment = parseFloat(data.adam_adjustment) || 0;
   const mattAdjustment = parseFloat(data.matt_adjustment) || 0;
 
   validate(paidBy, amount, expenseDate, adamShares, mattShares);
+  // Re-derive the rate from currency + date so an edit can never leave a stale
+  // or mismatched rate (e.g. when the currency or date itself was changed).
+  const { rateToBase, rateDate } =
+    currency === "USD"
+      ? { rateToBase: 1, rateDate: expenseDate }
+      : await fetchRate(currency, expenseDate);
   await ensureSchema();
   await sql`
     UPDATE expenses SET
