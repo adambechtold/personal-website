@@ -155,7 +155,8 @@ export default function TripTracker({ initialExpenses }) {
   const visibleExpenses = [...initialExpenses]
     .filter((e) => filterUser === "all" || e.paid_by === filterUser)
     .sort((a, b) => {
-      let av, bv;
+      let av;
+      let bv;
       if (sort.field === "date_added") {
         av = a.id;
         bv = b.id;
