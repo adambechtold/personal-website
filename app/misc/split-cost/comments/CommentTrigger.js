@@ -14,7 +14,13 @@ import styles from "./comments.module.css";
  * @param {function} props.onClick
  * @return {React.ReactElement}
  */
-export default function CommentTrigger({ count, latest, active, showTeaser, onClick }) {
+export default function CommentTrigger({
+  count,
+  latest,
+  active,
+  showTeaser,
+  onClick,
+}) {
   return (
     <button
       type="button"

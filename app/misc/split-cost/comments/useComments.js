@@ -60,7 +60,7 @@ export function useComments(expenseId, initialComments = []) {
         setPending(false);
       }
     },
-    [expenseId, author],
+    [expenseId, author]
   );
 
   const edit = useCallback(async (id, body) => {

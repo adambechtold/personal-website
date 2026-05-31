@@ -52,7 +52,9 @@ export default function CommentItem({ comment, pending, onEdit, onRemove }) {
   return (
     <li className={styles.item}>
       <div className={styles.itemHeader}>
-        <span className={styles.author}>{NAMES[comment.author] || comment.author}</span>
+        <span className={styles.author}>
+          {NAMES[comment.author] || comment.author}
+        </span>
         <span className={styles.meta}>
           {relativeTime(comment.created_at)}
           {comment.edited ? " · edited" : ""}

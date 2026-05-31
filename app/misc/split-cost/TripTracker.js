@@ -108,7 +108,10 @@ function formatDate(dateStr) {
  * @param {{initialExpenses: Array}} props
  * @return {React.ReactElement}
  */
-export default function TripTracker({ initialExpenses, commentsByExpense = {} }) {
+export default function TripTracker({
+  initialExpenses,
+  commentsByExpense = {},
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -121,7 +124,8 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
 
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
-    if (saved === "adam" || saved === "matt") setForm((f) => ({ ...f, paid_by: saved }));
+    if (saved === "adam" || saved === "matt")
+      setForm((f) => ({ ...f, paid_by: saved }));
   }, []);
 
   const settlement = computeSettlement(initialExpenses);
@@ -277,11 +281,7 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Add Expense</h2>
           <form onSubmit={handleAdd} className={styles.expenseForm}>
-            <ExpenseFields
-              form={form}
-              setForm={setForm}
-              styles={styles}
-            />
+            <ExpenseFields form={form} setForm={setForm} styles={styles} />
             <button
               className={styles.submitBtn}
               type="submit"
@@ -299,7 +299,11 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
               Expenses ({visibleExpenses.length})
             </h2>
             <div className={styles.personSelector}>
-              {[["all", "All"], ["adam", "Adam"], ["matt", "Matt"]].map(([value, label]) => (
+              {[
+                ["all", "All"],
+                ["adam", "Adam"],
+                ["matt", "Matt"],
+              ].map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
@@ -324,9 +328,10 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
                   type="button"
                   className={`${styles.personBtn} ${active ? styles.personBtnActive : ""}`}
                   onClick={() =>
-                    setSort(active
-                      ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
-                      : { field, dir: "desc" }
+                    setSort(
+                      active
+                        ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
+                        : { field, dir: "desc" }
                     )
                   }
                 >
@@ -334,6 +339,21 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
                 </button>
               );
             })}
+          </div>
+          <div className={styles.sortBar}>
+            {[
+              ["inline", "💬 Inline"],
+              ["sheet", "💬 Sheet"],
+            ].map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                className={`${styles.personBtn} ${commentMode === m ? styles.personBtnActive : ""}`}
+                onClick={() => setCommentMode(m)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           {visibleExpenses.length === 0 && (
             <p className={styles.empty}>No expenses yet.</p>
@@ -426,6 +446,12 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
                         Matt: {formatCurrency(mattPortion * rate, "USD")}
                       </span>
                     </div>
+                    <Comments
+                      expenseId={exp.id}
+                      initialComments={commentsByExpense[exp.id] || []}
+                      mode={commentMode}
+                      label={exp.description}
+                    />
                   </>
                 )}
               </div>
@@ -439,6 +465,7 @@ export default function TripTracker({ initialExpenses, commentsByExpense = {} })
 
 TripTracker.propTypes = {
   initialExpenses: PropTypes.arrayOf(PropTypes.object).isRequired,
+  commentsByExpense: PropTypes.object,
 };
 
 /**
@@ -554,7 +581,9 @@ function ExpenseFields({ form, setForm, styles }) {
           step="0.01"
           placeholder="0"
           value={form.adam_adjustment}
-          onChange={(e) => setForm({ ...form, adam_adjustment: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, adam_adjustment: e.target.value })
+          }
         />
         <input
           className={styles.adjustmentInput}
@@ -562,7 +591,9 @@ function ExpenseFields({ form, setForm, styles }) {
           step="0.01"
           placeholder="0"
           value={form.matt_adjustment}
-          onChange={(e) => setForm({ ...form, matt_adjustment: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, matt_adjustment: e.target.value })
+          }
         />
         {/* cost preview row */}
         {(() => {
