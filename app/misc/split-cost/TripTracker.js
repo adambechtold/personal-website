@@ -180,45 +180,45 @@ export default function TripTracker({ initialExpenses }) {
 
         {/* Settlement Summary */}
         <div className={styles.section}>
-        <div className={styles.settlement}>
-          <div className={styles.settlementLine}>{settlementLine}</div>
-          <div className={styles.settlementBreakdown}>
-            <div
-              className={`${styles.settlementRow} ${styles.settlementHeader}`}
-            >
-              <span></span>
-              <span>Paid</span>
-              <span>Share</span>
-              <span>Net</span>
-            </div>
-            <div className={styles.settlementRow}>
-              <span>Adam</span>
-              <span>${settlement.adamPaid.toFixed(2)}</span>
-              <span>${settlement.adamOwed.toFixed(2)}</span>
-              <span
-                className={
-                  settlement.adamNet >= 0 ? styles.positive : styles.negative
-                }
+          <div className={styles.settlement}>
+            <div className={styles.settlementLine}>{settlementLine}</div>
+            <div className={styles.settlementBreakdown}>
+              <div
+                className={`${styles.settlementRow} ${styles.settlementHeader}`}
               >
-                {settlement.adamNet >= 0 ? "+" : ""}$
-                {settlement.adamNet.toFixed(2)}
-              </span>
-            </div>
-            <div className={styles.settlementRow}>
-              <span>Matt</span>
-              <span>${settlement.mattPaid.toFixed(2)}</span>
-              <span>${settlement.mattOwed.toFixed(2)}</span>
-              <span
-                className={
-                  settlement.mattNet >= 0 ? styles.positive : styles.negative
-                }
-              >
-                {settlement.mattNet >= 0 ? "+" : ""}$
-                {settlement.mattNet.toFixed(2)}
-              </span>
+                <span></span>
+                <span>Paid</span>
+                <span>Share</span>
+                <span>Net</span>
+              </div>
+              <div className={styles.settlementRow}>
+                <span>Adam</span>
+                <span>${settlement.adamPaid.toFixed(2)}</span>
+                <span>${settlement.adamOwed.toFixed(2)}</span>
+                <span
+                  className={
+                    settlement.adamNet >= 0 ? styles.positive : styles.negative
+                  }
+                >
+                  {settlement.adamNet >= 0 ? "+" : ""}$
+                  {settlement.adamNet.toFixed(2)}
+                </span>
+              </div>
+              <div className={styles.settlementRow}>
+                <span>Matt</span>
+                <span>${settlement.mattPaid.toFixed(2)}</span>
+                <span>${settlement.mattOwed.toFixed(2)}</span>
+                <span
+                  className={
+                    settlement.mattNet >= 0 ? styles.positive : styles.negative
+                  }
+                >
+                  {settlement.mattNet >= 0 ? "+" : ""}$
+                  {settlement.mattNet.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </div>
 
         {/* Add Expense Form */}
