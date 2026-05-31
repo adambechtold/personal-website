@@ -67,8 +67,10 @@ copy its style).
 
 ## Tier 3 — Important, but degradation not money-loss
 
-**Scope:** `TripTracker.js` rendering/behavior. Requires React Testing Library +
-jsdom (set up inside this task).
+**Scope:** `TripTracker.js` rendering/behavior. A shared `vitest.config.js` already
+exists (default `node` environment). For DOM tests, install
+`jsdom` + `@testing-library/react` and opt into a DOM per-file with a docblock at
+the top of the test file: `// @vitest-environment jsdom`. Do not add a second config.
 
 | #   | Condition                                                                    |
 | --- | ---------------------------------------------------------------------------- |
