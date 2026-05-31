@@ -355,7 +355,7 @@ export default function TripTracker({ initialExpenses }) {
                         type="submit"
                         disabled={pending}
                       >
-                        {pending ? "Fetching rate…" : "Save"}
+                        {pending ? "Saving…" : "Save"}
                       </button>
                       <button
                         className={styles.cancelBtn}
