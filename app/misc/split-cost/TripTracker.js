@@ -179,6 +179,7 @@ export default function TripTracker({ initialExpenses }) {
         <h1 className={styles.title}>🇮🇪 Ireland Trip</h1>
 
         {/* Settlement Summary */}
+        <div className={styles.section}>
         <div className={styles.settlement}>
           <div className={styles.settlementLine}>{settlementLine}</div>
           <div className={styles.settlementBreakdown}>
@@ -217,6 +218,7 @@ export default function TripTracker({ initialExpenses }) {
               </span>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Add Expense Form */}
