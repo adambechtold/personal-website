@@ -44,13 +44,12 @@ export function computePortions(exp) {
     totalShares > 0
       ? (mattShares / totalShares) * remaining + mattAdj
       : mattAdj;
-  // Round the non-payer's portion to the nearest cent; give the payer the exact
-  // remainder so any sub-cent fraction is recouped by whoever fronted the money.
+  // Floor the non-payer's portion so the payer absorbs any odd cent.
   if (exp.paid_by === "adam") {
-    mattPortion = Math.round(mattPortion * 100) / 100;
+    mattPortion = Math.floor(mattPortion * 100) / 100;
     adamPortion = Math.round((amount - mattPortion) * 100) / 100;
   } else if (exp.paid_by === "matt") {
-    adamPortion = Math.round(adamPortion * 100) / 100;
+    adamPortion = Math.floor(adamPortion * 100) / 100;
     mattPortion = Math.round((amount - adamPortion) * 100) / 100;
   }
   return { adamPortion, mattPortion };

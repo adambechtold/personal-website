@@ -150,13 +150,12 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  // Payer-gets-the-extra-cent rounding policy (authorized by Adam Bechtold).
-  // When paid_by is set, the non-payer's portion is rounded to the nearest cent
-  // and the payer's portion is the exact remainder, so the payer recoups any
-  // sub-cent fraction in settlement rather than absorbing it.
-  it("should give the payer the sub-cent remainder when adam paid", () => {
-    // raw portions are $0.005 each; Matt (non-payer) rounds up to $0.01; Adam gets $0.00
-    // In settlement Adam paid $0.01, owes $0.00 → Adam receives the full cent back
+  // Payer-pays-the-extra-cent rounding policy.
+  // When paid_by is set, the non-payer's portion is floored to the nearest cent
+  // and the payer's portion is the exact remainder, so the payer absorbs any
+  // odd cent rather than passing it to the other person.
+  it("should give the payer the extra cent when adam paid", () => {
+    // raw portions are $0.005 each; Matt (non-payer) floors to $0.00; Adam gets $0.01
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
       paid_by: "adam",
@@ -165,13 +164,13 @@ describe("computePortions", () => {
       adam_adjustment: "0",
       matt_adjustment: "0",
     });
-    expect(mattPortion).toBeCloseTo(0.01, 10);
-    expect(adamPortion).toBeCloseTo(0.0, 10);
+    expect(adamPortion).toBeCloseTo(0.01, 10);
+    expect(mattPortion).toBeCloseTo(0.0, 10);
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  it("should give the payer the sub-cent remainder when matt paid", () => {
-    // Adam (non-payer) rounds up to $0.01; Matt gets $0.00
+  it("should give the payer the extra cent when matt paid", () => {
+    // Adam (non-payer) floors to $0.00; Matt gets $0.01
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
       paid_by: "matt",
@@ -180,8 +179,8 @@ describe("computePortions", () => {
       adam_adjustment: "0",
       matt_adjustment: "0",
     });
-    expect(adamPortion).toBeCloseTo(0.01, 10);
-    expect(mattPortion).toBeCloseTo(0.0, 10);
+    expect(mattPortion).toBeCloseTo(0.01, 10);
+    expect(adamPortion).toBeCloseTo(0.0, 10);
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
@@ -446,8 +445,8 @@ describe("computeSettlement", () => {
 
   it("should not leak cents across many accumulated sub-cent expenses", () => {
     // 100 × $0.01 paid by adam, split 1:1
-    // Payer rounding: each expense → adam portion $0.00, matt portion $0.01
-    // adamPaid=1.00, adamOwed=0.00, mattOwed=1.00 → adamNet=1.00 (Matt owes Adam $1)
+    // Payer-pays-extra-cent: each expense → adam portion $0.01, matt portion $0.00
+    // adamPaid=1.00, adamOwed=1.00, mattOwed=0.00 → adamNet=0.00 (they're even)
     const expenses = Array.from({ length: 100 }, () => ({
       paid_by: "adam",
       amount: "0.01",
@@ -459,6 +458,6 @@ describe("computeSettlement", () => {
     }));
     const s = computeSettlement(expenses);
     expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
-    expect(s.adamNet).toBeCloseTo(1.0, 10);
+    expect(s.adamNet).toBeCloseTo(0.0, 10);
   });
 });
