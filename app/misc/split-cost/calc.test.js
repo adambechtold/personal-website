@@ -10,7 +10,7 @@ import { computePortions, computeSettlement } from "./calc";
  */
 
 describe("computePortions", () => {
-  it("splits evenly with equal shares and no adjustments (1.1 conservation)", () => {
+  it("should split evenly with equal shares and no adjustments", () => {
     const { adamPortion, mattPortion } = computePortions({
       amount: "100.00",
       adam_shares: "1",
@@ -23,7 +23,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(100, 10);
   });
 
-  it("splits by uneven shares", () => {
+  it("should split by uneven shares", () => {
     const { adamPortion, mattPortion } = computePortions({
       amount: "90",
       adam_shares: "2",
@@ -35,7 +35,7 @@ describe("computePortions", () => {
     expect(mattPortion).toBeCloseTo(30, 10);
   });
 
-  it("carves out an adjustment, then splits the remainder", () => {
+  it("should carve out an adjustment and split the remainder", () => {
     // Adam had a $20 personal item; the remaining $80 splits 1:1.
     const { adamPortion, mattPortion } = computePortions({
       amount: "100",
@@ -49,7 +49,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(100, 10);
   });
 
-  it("conserves the amount for thousands of random valid expenses (1.1)", () => {
+  it("should conserve the full amount across thousands of random valid expenses", () => {
     for (let i = 0; i < 2000; i++) {
       const amount = Math.round(Math.random() * 1_000_000) / 100; // up to $10k, 2dp
       const adamShares = Math.floor(Math.random() * 10);
@@ -69,8 +69,8 @@ describe("computePortions", () => {
     }
   });
 
-  // 1.6 — adjustment edge cases
-  it("1.6 conservation holds when adam_adjustment exceeds the amount", () => {
+  // adjustment edge cases
+  it("should conserve the full amount when an adjustment exceeds the total", () => {
     // amount=10, adamAdj=15 → remaining=-5; adam=-2.5+15=12.5, matt=-2.5; sum=10
     const { adamPortion, mattPortion } = computePortions({
       amount: "10",
@@ -84,7 +84,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(10, 10);
   });
 
-  it("1.6 conservation holds with a negative adjustment", () => {
+  it("should conserve the full amount with a negative adjustment", () => {
     // adamAdj=-10 → remaining=110; adam=55-10=45, matt=55; sum=100
     const { adamPortion, mattPortion } = computePortions({
       amount: "100",
@@ -98,7 +98,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(100, 10);
   });
 
-  it("1.6 conservation holds when adjustments sum to the full amount", () => {
+  it("should conserve the full amount when adjustments consume the entire expense", () => {
     // all money is pre-carved; remaining=0 so shares add nothing
     const { adamPortion, mattPortion } = computePortions({
       amount: "100",
@@ -112,7 +112,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(100, 10);
   });
 
-  it("1.6 conservation holds when both adjustments are negative", () => {
+  it("should conserve the full amount when both adjustments are negative", () => {
     // both negative → remaining > amount; sum must still equal amount
     const { adamPortion, mattPortion } = computePortions({
       amount: "100",
@@ -124,9 +124,9 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(100, 10);
   });
 
-  // 1.7 — sub-cent conservation without paid_by: no rounding is applied when
-  // paid_by is absent (e.g. in-form cost preview), so raw floats are returned.
-  it("1.7 sub-cent conservation (no paid_by): $0.01 split 1:1 sums to the full amount", () => {
+  // When paid_by is absent (e.g. in-form cost preview), no rounding is applied
+  // and raw floats are returned. Conservation still holds at float precision.
+  it("should return raw portions that sum to the full amount for a sub-cent 1:1 split", () => {
     // each person gets 0.005 as a raw float; no payer rounding applied
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
@@ -138,7 +138,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  it("1.7 sub-cent conservation (no paid_by): $0.01 split 1:2 sums to the full amount", () => {
+  it("should return raw portions that sum to the full amount for a sub-cent 1:2 split", () => {
     // adam gets 0.00333…, matt gets 0.00666…; sum = 0.01
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
@@ -150,11 +150,11 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  // 1.7 — payer-gets-the-extra-cent rounding policy (authorized by Adam Bechtold).
-  // When paid_by is set, the non-payer's portion is rounded to the nearest cent and
-  // the payer's portion is the exact remainder, so the payer recoups any sub-cent
-  // fraction in the settlement rather than absorbing it.
-  it("1.7 rounding: adam paid — matt owes the full cent on a $0.01 1:1 split", () => {
+  // Payer-gets-the-extra-cent rounding policy (authorized by Adam Bechtold).
+  // When paid_by is set, the non-payer's portion is rounded to the nearest cent
+  // and the payer's portion is the exact remainder, so the payer recoups any
+  // sub-cent fraction in settlement rather than absorbing it.
+  it("should give the payer the sub-cent remainder when adam paid", () => {
     // raw portions are $0.005 each; Matt (non-payer) rounds up to $0.01; Adam gets $0.00
     // In settlement Adam paid $0.01, owes $0.00 → Adam receives the full cent back
     const { adamPortion, mattPortion } = computePortions({
@@ -170,7 +170,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  it("1.7 rounding: matt paid — adam owes the full cent on a $0.01 1:1 split", () => {
+  it("should give the payer the sub-cent remainder when matt paid", () => {
     // Adam (non-payer) rounds up to $0.01; Matt gets $0.00
     const { adamPortion, mattPortion } = computePortions({
       amount: "0.01",
@@ -185,7 +185,7 @@ describe("computePortions", () => {
     expect(adamPortion + mattPortion).toBeCloseTo(0.01, 10);
   });
 
-  it("1.7 rounding: even-cent splits are unaffected by the payer rule", () => {
+  it("should not alter portions that divide evenly to the cent", () => {
     // $100 split 1:1 divides exactly; no rounding needed regardless of payer
     const { adamPortion, mattPortion } = computePortions({
       amount: "100.00",
@@ -199,7 +199,7 @@ describe("computePortions", () => {
     expect(mattPortion).toBeCloseTo(50, 10);
   });
 
-  it("1.7 rounding: conservation holds with paid_by set for hundreds of random cent amounts", () => {
+  it("should conserve the full amount across hundreds of random cent inputs when paid_by is set", () => {
     for (let i = 0; i < 500; i++) {
       // Use whole-cent amounts (input data is always in cents per validate())
       const cents = Math.floor(Math.random() * 100000);
@@ -221,7 +221,7 @@ describe("computePortions", () => {
 });
 
 describe("computeSettlement", () => {
-  it("returns all zeros for an empty list", () => {
+  it("should return all zeros for an empty expense list", () => {
     const s = computeSettlement([]);
     expect(s).toEqual({
       adamPaid: 0,
@@ -233,7 +233,7 @@ describe("computeSettlement", () => {
     });
   });
 
-  it("is zero-sum: adamNet === -mattNet (1.2)", () => {
+  it("should produce a zero-sum settlement where adamNet equals negative mattNet", () => {
     const expenses = [
       {
         paid_by: "adam",
@@ -261,7 +261,7 @@ describe("computeSettlement", () => {
     expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
   });
 
-  it("converts to USD via each expense's frozen rate_to_base (1.4)", () => {
+  it("should convert each expense to USD using its own rate_to_base", () => {
     const expenses = [
       {
         paid_by: "matt",
@@ -279,7 +279,7 @@ describe("computeSettlement", () => {
     expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
   });
 
-  it("1.2 zero-sum holds across a mixed-currency expense list", () => {
+  it("should remain zero-sum across a mixed-currency expense list", () => {
     // EUR + GBP expenses; each must use its own rate, and the net must still cancel
     const expenses = [
       {
@@ -306,7 +306,7 @@ describe("computeSettlement", () => {
     expect(s.adamNet).toBeCloseTo(-s.mattNet, 10);
   });
 
-  it("1.3 settlement direction: adamNet > 0 when Adam overpaid (Matt owes Adam)", () => {
+  it("should return a positive adamNet when Adam overpaid so Matt owes Adam", () => {
     // Adam paid 100, each owes 50 → adamNet = 50 > 0
     const expenses = [
       {
@@ -324,7 +324,7 @@ describe("computeSettlement", () => {
     expect(s.adamNet).toBeCloseTo(50, 10);
   });
 
-  it("1.3 settlement direction: adamNet < 0 when Matt overpaid (Adam owes Matt)", () => {
+  it("should return a negative adamNet when Matt overpaid so Adam owes Matt", () => {
     // Matt paid 100, each owes 50 → adamNet = 0 - 50 = -50 < 0
     const expenses = [
       {
@@ -342,7 +342,7 @@ describe("computeSettlement", () => {
     expect(s.adamNet).toBeCloseTo(-50, 10);
   });
 
-  it("1.3 settlement direction: |adamNet| < 0.01 when expenses exactly balance (settled)", () => {
+  it("should return adamNet within the settled threshold when expenses exactly balance", () => {
     // Each person pays $50 and owes $50 → adamNet = 0 → within settled threshold
     const expenses = [
       {
@@ -368,7 +368,7 @@ describe("computeSettlement", () => {
     expect(Math.abs(s.adamNet)).toBeLessThan(0.01);
   });
 
-  it("1.4 each expense uses its own rate_to_base, not a shared rate", () => {
+  it("should apply each expense's own rate_to_base independently", () => {
     // Two expenses at very different rates; adamPaid and mattPaid must reflect per-row rates
     const expenses = [
       {
@@ -395,7 +395,7 @@ describe("computeSettlement", () => {
     expect(s.mattPaid).toBeCloseTo(50, 10);
   });
 
-  it("1.4 USD row applies rate 1 and amount passes through unchanged", () => {
+  it("should pass a USD expense through unchanged with rate 1", () => {
     const expenses = [
       {
         paid_by: "adam",
@@ -413,7 +413,7 @@ describe("computeSettlement", () => {
     expect(s.mattOwed).toBeCloseTo(37.5, 10);
   });
 
-  it("1.5 re-running settlement on the same rows yields identical results", () => {
+  it("should produce identical results when run twice on the same expense rows", () => {
     const expenses = [
       {
         paid_by: "adam",
@@ -444,7 +444,7 @@ describe("computeSettlement", () => {
     expect(second.mattOwed).toBe(first.mattOwed);
   });
 
-  it("1.7 repeated $0.01 expenses do not leak cents in settlement totals", () => {
+  it("should not leak cents across many accumulated sub-cent expenses", () => {
     // 100 × $0.01 paid by adam, split 1:1
     // Payer rounding: each expense → adam portion $0.00, matt portion $0.01
     // adamPaid=1.00, adamOwed=0.00, mattOwed=1.00 → adamNet=1.00 (Matt owes Adam $1)
