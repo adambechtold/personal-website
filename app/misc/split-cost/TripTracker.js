@@ -231,7 +231,7 @@ export default function TripTracker({ initialExpenses }) {
               type="submit"
               disabled={pending}
             >
-              {pending ? "Fetching rate…" : "Add Expense"}
+              {pending ? "Saving…" : "Add Expense"}
             </button>
           </form>
         </div>
