@@ -26,6 +26,7 @@ export default function InlineComments({ thread }) {
         latest={latest}
         active={open}
         showTeaser={!open}
+        caret
         onClick={() => setOpen((o) => !o)}
       />
       {open && (
