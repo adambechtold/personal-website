@@ -36,14 +36,23 @@ export function computePortions(exp) {
   const mattAdj = parseFloat(exp.matt_adjustment) || 0;
   const totalShares = adamShares + mattShares;
   const remaining = amount - adamAdj - mattAdj;
-  const adamPortion =
+  let adamPortion =
     totalShares > 0
       ? (adamShares / totalShares) * remaining + adamAdj
       : adamAdj;
-  const mattPortion =
+  let mattPortion =
     totalShares > 0
       ? (mattShares / totalShares) * remaining + mattAdj
       : mattAdj;
+  // Round the non-payer's portion to the nearest cent; give the payer the exact
+  // remainder so any sub-cent fraction is recouped by whoever fronted the money.
+  if (exp.paid_by === "adam") {
+    mattPortion = Math.round(mattPortion * 100) / 100;
+    adamPortion = Math.round((amount - mattPortion) * 100) / 100;
+  } else if (exp.paid_by === "matt") {
+    adamPortion = Math.round(adamPortion * 100) / 100;
+    mattPortion = Math.round((amount - adamPortion) * 100) / 100;
+  }
   return { adamPortion, mattPortion };
 }
 
