@@ -1,5 +1,8 @@
 import React from "react";
 import LiftPlan from "./LiftPlan";
+import { loadLogs } from "./actions";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Summer Lifting Plan | Adam Bechtold",
@@ -8,9 +11,10 @@ export const metadata = {
 };
 
 /**
- * Summer Lifting Plan page.
- * @return {React.ReactElement} The rendered page.
+ * Summer Lifting Plan page — loads saved set logs and renders the logger.
+ * @return {Promise<React.ReactElement>} The rendered page.
  */
-export default function LiftPage() {
-  return <LiftPlan />;
+export default async function LiftPage() {
+  const initialLogs = await loadLogs();
+  return <LiftPlan initialLogs={initialLogs} />;
 }

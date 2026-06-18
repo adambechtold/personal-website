@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 import { SESSIONS, WEEK, ABBR, NOTES, CONFIG } from "./data";
+import { saveCells } from "./actions";
 
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
 const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
@@ -23,20 +25,33 @@ function currentWeek() {
 }
 
 /**
- * Builds the empty per-session log structure: for each session, an array of
- * exercises, each holding an array of { weight, reps, done } set cells.
- * @return {Object} The freshly-seeded logs keyed by session id.
+ * Builds the empty log structure — keyed by week, then session id, then an
+ * array of exercises, each holding an array of { weight, reps, done } cells —
+ * and overlays any saved rows from the database on top.
+ * @param {Array} [savedRows] - Rows loaded from Postgres.
+ * @return {Object} The seeded logs keyed by week and session id.
  */
-function buildLogs() {
+function buildLogs(savedRows = []) {
   const o = {};
-  for (const k of Object.keys(SESSIONS)) {
-    o[k] = SESSIONS[k].ex.map((e) => ({
-      sets: Array.from({ length: e.sets }, () => ({
-        weight: "",
-        reps: "",
-        done: false,
-      })),
-    }));
+  for (let w = 1; w <= PROGRAM_WEEKS; w++) {
+    o[w] = {};
+    for (const k of Object.keys(SESSIONS)) {
+      o[w][k] = SESSIONS[k].ex.map((e) => ({
+        sets: Array.from({ length: e.sets }, () => ({
+          weight: "",
+          reps: "",
+          done: false,
+        })),
+      }));
+    }
+  }
+  for (const r of savedRows) {
+    const session = o[r.week]?.[r.session_type];
+    const cell = session?.[r.exercise_idx]?.sets?.[r.set_idx];
+    if (!cell) continue;
+    cell.weight = r.weight ?? "";
+    cell.reps = r.reps ?? "";
+    cell.done = !!r.done;
   }
   return o;
 }
@@ -53,16 +68,18 @@ function fmt(s) {
 
 /**
  * Summer Lifting Plan — a phone-first logger for a 4-day Upper/Lower block.
- * State is held in memory only; nothing persists across reloads.
+ * Logged sets persist to Postgres, scoped per week, so reloading resumes
+ * where you left off.
+ * @param {{initialLogs: Array}} props - Saved set rows from the database.
  * @return {React.ReactElement} The rendered logger.
  */
-export default function LiftPlan() {
+export default function LiftPlan({ initialLogs }) {
   const todayIdx = useMemo(() => DAY_MAP[new Date().getDay()], []);
 
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
   const [week, setWeek] = useState(currentWeek);
   const [expanded, setExpanded] = useState(0);
-  const [logs, setLogs] = useState(buildLogs);
+  const [logs, setLogs] = useState(() => buildLogs(initialLogs));
   const [timer, setTimer] = useState(null);
   const [notesOpen, setNotesOpen] = useState(false);
   const [weightEditor, setWeightEditor] = useState(null);
@@ -113,23 +130,45 @@ export default function LiftPlan() {
   }
 
   /**
+   * Applies set-cell updates for the current week + session to local state and
+   * persists them to the database. Each update is { ex, set, cell }.
+   * @param {Array} updates - The cells to write.
+   */
+  function commit(updates) {
+    setLogs((prev) => {
+      const next = structuredClone(prev);
+      for (const u of updates) {
+        next[week][sid][u.ex].sets[u.set] = { ...u.cell };
+      }
+      return next;
+    });
+    saveCells(
+      updates.map((u) => ({
+        week,
+        session_type: sid,
+        exercise_idx: u.ex,
+        set_idx: u.set,
+        weight: u.cell.weight,
+        reps: u.cell.reps,
+        done: u.cell.done,
+      }))
+    ).catch(() => {});
+  }
+
+  /**
    * Steps a set's reps by ±1, flooring at 0; an empty field seeds off lo.
    * @param {number} ex - The exercise index.
    * @param {number} set - The set index.
    * @param {number} delta - The step direction (+1 or -1).
    */
   function stepReps(ex, set, delta) {
-    setLogs((prev) => {
-      const next = structuredClone(prev);
-      const cell = next[sid][ex].sets[set];
-      const lo = SESSIONS[sid].ex[ex].lo;
-      let cur = parseFloat(cell.reps);
-      if (isNaN(cur)) cur = lo - delta;
-      let nv = cur + delta;
-      if (nv < 0) nv = 0;
-      cell.reps = String(nv);
-      return next;
-    });
+    const cur0 = logs[week][sid][ex].sets[set];
+    const lo = SESSIONS[sid].ex[ex].lo;
+    let cur = parseFloat(cur0.reps);
+    if (isNaN(cur)) cur = lo - delta;
+    let nv = cur + delta;
+    if (nv < 0) nv = 0;
+    commit([{ ex, set, cell: { ...cur0, reps: String(nv) } }]);
   }
 
   /**
@@ -140,11 +179,8 @@ export default function LiftPlan() {
    */
   function inputReps(ex, set, value) {
     const v = value.replace(/[^0-9]/g, "");
-    setLogs((prev) => {
-      const next = structuredClone(prev);
-      next[sid][ex].sets[set].reps = v;
-      return next;
-    });
+    const cur0 = logs[week][sid][ex].sets[set];
+    commit([{ ex, set, cell: { ...cur0, reps: v } }]);
   }
 
   /**
@@ -154,23 +190,16 @@ export default function LiftPlan() {
    * @param {number} set - The set index.
    */
   function toggleDone(ex, set) {
-    let started = null;
-    setLogs((prev) => {
-      const next = structuredClone(prev);
-      const cell = next[sid][ex].sets[set];
-      const was = cell.done;
-      cell.done = !was;
-      if (!was && cell.reps === "") cell.reps = String(SESSIONS[sid].ex[ex].lo);
-      if (!was && CONFIG.autoTimer) {
-        const type = SESSIONS[sid].ex[ex].t;
-        started =
-          type === "c"
-            ? { sec: restCompound, label: "Compound rest" }
-            : { sec: restIso, label: "Isolation rest" };
-      }
-      return next;
-    });
-    if (started) startTimer(started.sec, started.label);
+    const cur0 = logs[week][sid][ex].sets[set];
+    const was = cur0.done;
+    const cell = { ...cur0, done: !was };
+    if (!was && cell.reps === "") cell.reps = String(SESSIONS[sid].ex[ex].lo);
+    commit([{ ex, set, cell }]);
+    if (!was && CONFIG.autoTimer) {
+      const type = SESSIONS[sid].ex[ex].t;
+      const sec = type === "c" ? restCompound : restIso;
+      startTimer(sec, type === "c" ? "Compound rest" : "Isolation rest");
+    }
   }
 
   /**
@@ -181,15 +210,14 @@ export default function LiftPlan() {
    * @param {string} value - The weight value to write.
    */
   function applyWeight(ex, set, value) {
-    setLogs((prev) => {
-      const next = structuredClone(prev);
-      const arr = next[sid][ex].sets;
-      arr[set].weight = value;
-      for (let j = set + 1; j < arr.length; j++) {
-        if (!arr[j].done) arr[j].weight = value;
+    const arr = logs[week][sid][ex].sets;
+    const updates = [{ ex, set, cell: { ...arr[set], weight: value } }];
+    for (let j = set + 1; j < arr.length; j++) {
+      if (!arr[j].done) {
+        updates.push({ ex, set: j, cell: { ...arr[j], weight: value } });
       }
-      return next;
-    });
+    }
+    commit(updates);
   }
 
   /**
@@ -199,7 +227,9 @@ export default function LiftPlan() {
   function weightAdjust(delta) {
     if (!weightEditor) return;
     const cur =
-      parseFloat(logs[sid][weightEditor.ex].sets[weightEditor.set].weight) || 0;
+      parseFloat(
+        logs[week][sid][weightEditor.ex].sets[weightEditor.set].weight
+      ) || 0;
     let nv = cur + delta;
     if (nv < 0) nv = 0;
     nv = Math.round(nv * 100) / 100;
@@ -250,7 +280,7 @@ export default function LiftPlan() {
 
   if (isWorkout) {
     const sess = SESSIONS[sid];
-    const log = logs[sid];
+    const log = logs[week][sid];
     let totalSets = 0;
     let doneSets = 0;
     let estSec = 0;
@@ -316,7 +346,7 @@ export default function LiftPlan() {
   if (weightEditor && isWorkout) {
     weightLabel =
       SESSIONS[sid].ex[weightEditor.ex].n + " · Set " + (weightEditor.set + 1);
-    weightVal = logs[sid][weightEditor.ex].sets[weightEditor.set].weight;
+    weightVal = logs[week][sid][weightEditor.ex].sets[weightEditor.set].weight;
   }
   const incA = unit === "kg" ? [1.25, 2.5, 5, 10] : [2.5, 5, 10, 25];
   const decA = unit === "kg" ? [2.5, 5, 10] : [5, 10, 25];
@@ -765,3 +795,11 @@ export default function LiftPlan() {
     </div>
   );
 }
+
+LiftPlan.propTypes = {
+  initialLogs: PropTypes.array,
+};
+
+LiftPlan.defaultProps = {
+  initialLogs: [],
+};
