@@ -7,6 +7,21 @@ import { SESSIONS, WEEK, ABBR, NOTES, CONFIG } from "./data";
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
 const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
 
+// Program week 1 begins the Monday of the week of 2026-06-18 (Thu).
+const PROGRAM_START = new Date(2026, 5, 15);
+const PROGRAM_WEEKS = 6;
+
+/**
+ * Derives the current program week (1–PROGRAM_WEEKS) from today's date,
+ * clamped to the block's bounds.
+ * @return {number} The current week number.
+ */
+function currentWeek() {
+  const ms = Date.now() - PROGRAM_START.getTime();
+  const w = Math.floor(ms / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return Math.min(PROGRAM_WEEKS, Math.max(1, w));
+}
+
 /**
  * Builds the empty per-session log structure: for each session, an array of
  * exercises, each holding an array of { weight, reps, done } set cells.
@@ -45,7 +60,7 @@ export default function LiftPlan() {
   const todayIdx = useMemo(() => DAY_MAP[new Date().getDay()], []);
 
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
-  const [week, setWeek] = useState(3);
+  const [week, setWeek] = useState(currentWeek);
   const [expanded, setExpanded] = useState(0);
   const [logs, setLogs] = useState(buildLogs);
   const [timer, setTimer] = useState(null);
@@ -220,7 +235,7 @@ export default function LiftPlan() {
   }
 
   // ── Derived view data ──────────────────────────────────────────────
-  const clamp = (w) => Math.min(6, Math.max(1, w));
+  const clamp = (w) => Math.min(PROGRAM_WEEKS, Math.max(1, w));
 
   let title = "";
   let lean = "";
