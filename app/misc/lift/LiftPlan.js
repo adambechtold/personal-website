@@ -66,6 +66,23 @@ function fmt(s) {
   return m + ":" + String(s % 60).padStart(2, "0");
 }
 
+// localStorage key for the active rest timer (survives reloads / tab discards).
+const TIMER_KEY = "lift-timer";
+
+/**
+ * Computes the timer's remaining whole seconds. A running timer is anchored to
+ * an absolute end timestamp (endsAt), so the value stays correct across sleep,
+ * background throttling, and reloads; a paused timer holds a fixed remaining.
+ * @param {Object|null} t - The timer state.
+ * @param {number} now - The current wall-clock time (ms).
+ * @return {number} Remaining seconds, floored at 0.
+ */
+function timerRemaining(t, now) {
+  if (!t) return 0;
+  if (t.paused) return Math.max(0, t.remaining);
+  return Math.max(0, Math.ceil((t.endsAt - now) / 1000));
+}
+
 /**
  * Summer Lifting Plan — a phone-first logger for a 4-day Upper/Lower block.
  * Logged sets persist to Postgres, scoped per week, so reloading resumes
@@ -81,6 +98,7 @@ export default function LiftPlan({ initialLogs }) {
   const [expanded, setExpanded] = useState(0);
   const [logs, setLogs] = useState(() => buildLogs(initialLogs));
   const [timer, setTimer] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
   const [weightEditor, setWeightEditor] = useState(null);
 
@@ -88,15 +106,42 @@ export default function LiftPlan({ initialLogs }) {
   const restCompound = CONFIG.restCompound;
   const restIso = CONFIG.restIso;
 
-  // Tick the rest timer down once a second while running.
+  // Restore any active timer left from a previous load / discarded tab.
   useEffect(() => {
-    const iv = setInterval(() => {
-      setTimer((t) => {
-        if (!t || t.paused || t.remaining <= 0) return t;
-        return { ...t, remaining: t.remaining - 1 };
-      });
-    }, 1000);
-    return () => clearInterval(iv);
+    try {
+      const raw = localStorage.getItem(TIMER_KEY);
+      if (raw) setTimer(JSON.parse(raw));
+    } catch {
+      // ignore malformed storage
+    }
+  }, []);
+
+  // Persist the active timer so it survives a reload or the tab being dropped.
+  useEffect(() => {
+    try {
+      if (timer) localStorage.setItem(TIMER_KEY, JSON.stringify(timer));
+      else localStorage.removeItem(TIMER_KEY);
+    } catch {
+      // ignore storage failures
+    }
+  }, [timer]);
+
+  // Advance "now" each second, and re-sync immediately on resume — the timer's
+  // remaining is derived from wall-clock time, so it can't drift or restart
+  // when the device sleeps or the tab is throttled in the background.
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const iv = setInterval(tick, 1000);
+    const onVisible = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", tick);
+    };
   }, []);
 
   const day = WEEK[selectedIdx];
@@ -126,7 +171,12 @@ export default function LiftPlan({ initialLogs }) {
    * @param {string} label - The timer label.
    */
   function startTimer(sec, label) {
-    setTimer({ remaining: sec, total: sec, label, paused: false });
+    setTimer({
+      endsAt: Date.now() + sec * 1000,
+      total: sec,
+      label,
+      paused: false,
+    });
   }
 
   /**
@@ -247,10 +297,18 @@ export default function LiftPlan({ initialLogs }) {
   }
 
   /**
-   * Pauses or resumes the running rest timer.
+   * Pauses or resumes the running rest timer. Pausing freezes the current
+   * remaining; resuming re-anchors the end timestamp to wall-clock time.
    */
   function togglePause() {
-    setTimer((t) => (t ? { ...t, paused: !t.paused } : t));
+    setTimer((t) => {
+      if (!t) return t;
+      if (t.paused) {
+        return { ...t, paused: false, endsAt: Date.now() + t.remaining * 1000 };
+      }
+      const remaining = timerRemaining(t, Date.now());
+      return { ...t, paused: true, remaining };
+    });
   }
 
   /**
@@ -259,8 +317,10 @@ export default function LiftPlan({ initialLogs }) {
   function addTime() {
     setTimer((t) => {
       if (!t) return t;
-      const r = t.remaining + 30;
-      return { ...t, remaining: r, total: Math.max(t.total, r), paused: false };
+      const r = timerRemaining(t, Date.now()) + 30;
+      const total = Math.max(t.total, r);
+      if (t.paused) return { ...t, remaining: r, total };
+      return { ...t, endsAt: Date.now() + r * 1000, total };
     });
   }
 
@@ -335,10 +395,11 @@ export default function LiftPlan({ initialLogs }) {
   let timerTime = "";
   let timerLabel = "";
   if (timer) {
-    const frac = timer.total ? timer.remaining / timer.total : 0;
+    const remaining = timerRemaining(timer, now);
+    const frac = timer.total ? remaining / timer.total : 0;
     timerOffset = (C * (1 - frac)).toFixed(1);
-    timerTime = fmt(timer.remaining);
-    timerLabel = timer.remaining === 0 ? "Rest complete" : timer.label;
+    timerTime = fmt(remaining);
+    timerLabel = remaining === 0 ? "Rest complete" : timer.label;
   }
 
   let weightLabel = "";
