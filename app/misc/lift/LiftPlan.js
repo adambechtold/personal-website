@@ -25,9 +25,11 @@ function currentWeek() {
 }
 
 /**
- * Builds the empty log structure — keyed by week, then session id, then an
- * array of exercises, each holding an array of { weight, reps, done } cells —
- * and overlays any saved rows from the database on top.
+ * Builds the log structure — keyed by week, then session id, then an array of
+ * exercises, each holding an array of { weight, reps, done, carried } cells.
+ * Saved rows are overlaid on top, then untouched cells inherit the weight and
+ * reps from the most recent earlier week that logged the same set (carried),
+ * so each week rolls forward from the last.
  * @param {Array} [savedRows] - Rows loaded from Postgres.
  * @return {Object} The seeded logs keyed by week and session id.
  */
@@ -41,6 +43,7 @@ function buildLogs(savedRows = []) {
           weight: "",
           reps: "",
           done: false,
+          carried: false,
         })),
       }));
     }
@@ -53,7 +56,35 @@ function buildLogs(savedRows = []) {
     cell.reps = r.reps ?? "";
     cell.done = !!r.done;
   }
+  rollForward(o);
   return o;
+}
+
+/**
+ * Fills each untouched cell with the weight and reps from the nearest earlier
+ * week that logged the same set, marking it carried. Carried cells are skipped
+ * as sources so values only roll forward from weeks the user actually logged.
+ * @param {Object} o - The logs structure to mutate in place.
+ */
+function rollForward(o) {
+  for (let w = 2; w <= PROGRAM_WEEKS; w++) {
+    for (const k of Object.keys(SESSIONS)) {
+      o[w][k].forEach((exercise, ei) => {
+        exercise.sets.forEach((cell, si) => {
+          if (cell.weight !== "" || cell.reps !== "" || cell.done) return;
+          for (let pw = w - 1; pw >= 1; pw--) {
+            const src = o[pw][k][ei].sets[si];
+            if (!src.carried && (src.weight !== "" || src.reps !== "")) {
+              cell.weight = src.weight;
+              cell.reps = src.reps;
+              cell.carried = true;
+              break;
+            }
+          }
+        });
+      });
+    }
+  }
 }
 
 /**
@@ -233,7 +264,7 @@ export default function LiftPlan({ initialLogs }) {
     if (isNaN(cur)) cur = lo - delta;
     let nv = cur + delta;
     if (nv < 0) nv = 0;
-    commit([{ ex, set, cell: { ...cur0, reps: String(nv) } }]);
+    commit([{ ex, set, cell: { ...cur0, reps: String(nv), carried: false } }]);
   }
 
   /**
@@ -245,7 +276,7 @@ export default function LiftPlan({ initialLogs }) {
   function inputReps(ex, set, value) {
     const v = value.replace(/[^0-9]/g, "");
     const cur0 = logs[week][sid][ex].sets[set];
-    commit([{ ex, set, cell: { ...cur0, reps: v } }]);
+    commit([{ ex, set, cell: { ...cur0, reps: v, carried: false } }]);
   }
 
   /**
@@ -257,7 +288,7 @@ export default function LiftPlan({ initialLogs }) {
   function toggleDone(ex, set) {
     const cur0 = logs[week][sid][ex].sets[set];
     const was = cur0.done;
-    const cell = { ...cur0, done: !was };
+    const cell = { ...cur0, done: !was, carried: false };
     if (!was && cell.reps === "") cell.reps = String(SESSIONS[sid].ex[ex].lo);
     commit([{ ex, set, cell }]);
     if (!was && CONFIG.autoTimer) {
@@ -276,10 +307,16 @@ export default function LiftPlan({ initialLogs }) {
    */
   function applyWeight(ex, set, value) {
     const arr = logs[week][sid][ex].sets;
-    const updates = [{ ex, set, cell: { ...arr[set], weight: value } }];
+    const updates = [
+      { ex, set, cell: { ...arr[set], weight: value, carried: false } },
+    ];
     for (let j = set + 1; j < arr.length; j++) {
       if (!arr[j].done) {
-        updates.push({ ex, set: j, cell: { ...arr[j], weight: value } });
+        updates.push({
+          ex,
+          set: j,
+          cell: { ...arr[j], weight: value, carried: false },
+        });
       }
     }
     commit(updates);
@@ -606,7 +643,7 @@ export default function LiftPlan({ initialLogs }) {
                             <span
                               className={`${styles.weightVal} ${
                                 s.weight === "" ? styles.weightEmpty : ""
-                              }`}
+                              } ${s.carried ? styles.carried : ""}`}
                             >
                               {s.weight === "" ? "—" : s.weight}
                             </span>
@@ -621,7 +658,9 @@ export default function LiftPlan({ initialLogs }) {
                               −
                             </button>
                             <input
-                              className={styles.repsInput}
+                              className={`${styles.repsInput} ${
+                                s.carried ? styles.carried : ""
+                              }`}
                               value={s.reps}
                               inputMode="numeric"
                               placeholder={ex.ph}
