@@ -84,6 +84,21 @@ function timerRemaining(t, now) {
 }
 
 /**
+ * Validates a timer object restored from storage. Guards against both
+ * corrupted JSON and a stale/wrong shape (e.g. an older format) that would
+ * otherwise produce NaN in timerRemaining.
+ * @param {*} t - The candidate timer.
+ * @return {boolean} True if the timer is well-formed.
+ */
+function isValidTimer(t) {
+  if (!t || typeof t !== "object") return false;
+  if (!Number.isFinite(t.total)) return false;
+  if (typeof t.label !== "string") return false;
+  if (typeof t.paused !== "boolean") return false;
+  return Number.isFinite(t.paused ? t.remaining : t.endsAt);
+}
+
+/**
  * Summer Lifting Plan — a phone-first logger for a 4-day Upper/Lower block.
  * Logged sets persist to Postgres, scoped per week, so reloading resumes
  * where you left off.
@@ -107,12 +122,24 @@ export default function LiftPlan({ initialLogs }) {
   const restIso = CONFIG.restIso;
 
   // Restore any active timer left from a previous load / discarded tab.
+  // Anything malformed (corrupt JSON or a stale shape) is cleared so it can't
+  // keep failing on every load or feed NaN into the countdown.
   useEffect(() => {
+    let restored = null;
     try {
       const raw = localStorage.getItem(TIMER_KEY);
-      if (raw) setTimer(JSON.parse(raw));
+      if (raw) restored = JSON.parse(raw);
     } catch {
-      // ignore malformed storage
+      restored = null;
+    }
+    if (isValidTimer(restored)) {
+      setTimer(restored);
+    } else {
+      try {
+        localStorage.removeItem(TIMER_KEY);
+      } catch {
+        // ignore storage failures
+      }
     }
   }, []);
 
