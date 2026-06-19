@@ -70,32 +70,27 @@ function fmt(s) {
 const TIMER_KEY = "lift-timer";
 
 /**
- * Computes the timer's remaining whole seconds. A running timer is anchored to
- * an absolute end timestamp (endsAt), so the value stays correct across sleep,
- * background throttling, and reloads; a paused timer holds a fixed remaining.
- * @param {Object|null} t - The timer state.
- * @param {number} now - The current wall-clock time (ms).
- * @return {number} Remaining seconds, floored at 0.
+ * @param {Object|null} timer - Running timers carry endsAt; paused ones carry
+ *   remaining, so the value is correct across sleep, throttling, and reloads.
+ * @param {number} now - Wall-clock time in ms.
+ * @return {number} Whole seconds left, floored at 0.
  */
-function timerRemaining(t, now) {
-  if (!t) return 0;
-  if (t.paused) return Math.max(0, t.remaining);
-  return Math.max(0, Math.ceil((t.endsAt - now) / 1000));
+function getRemainingTimerDurationSeconds(timer, now) {
+  if (!timer) return 0;
+  if (timer.paused) return Math.max(0, timer.remaining);
+  return Math.max(0, Math.ceil((timer.endsAt - now) / 1000));
 }
 
 /**
- * Validates a timer object restored from storage. Guards against both
- * corrupted JSON and a stale/wrong shape (e.g. an older format) that would
- * otherwise produce NaN in timerRemaining.
- * @param {*} t - The candidate timer.
- * @return {boolean} True if the timer is well-formed.
+ * @param {*} timer - A timer restored from storage.
+ * @return {boolean} Whether it is well-formed enough to resume.
  */
-function isValidTimer(t) {
-  if (!t || typeof t !== "object") return false;
-  if (!Number.isFinite(t.total)) return false;
-  if (typeof t.label !== "string") return false;
-  if (typeof t.paused !== "boolean") return false;
-  return Number.isFinite(t.paused ? t.remaining : t.endsAt);
+function isValidTimer(timer) {
+  if (!timer || typeof timer !== "object") return false;
+  if (!Number.isFinite(timer.total)) return false;
+  if (typeof timer.label !== "string") return false;
+  if (typeof timer.paused !== "boolean") return false;
+  return Number.isFinite(timer.paused ? timer.remaining : timer.endsAt);
 }
 
 /**
@@ -121,9 +116,6 @@ export default function LiftPlan({ initialLogs }) {
   const restCompound = CONFIG.restCompound;
   const restIso = CONFIG.restIso;
 
-  // Restore any active timer left from a previous load / discarded tab.
-  // Anything malformed (corrupt JSON or a stale shape) is cleared so it can't
-  // keep failing on every load or feed NaN into the countdown.
   useEffect(() => {
     let restored = null;
     try {
@@ -138,27 +130,24 @@ export default function LiftPlan({ initialLogs }) {
       try {
         localStorage.removeItem(TIMER_KEY);
       } catch {
-        // ignore storage failures
+        // storage unavailable (e.g. private mode)
       }
     }
   }, []);
 
-  // Persist the active timer so it survives a reload or the tab being dropped.
   useEffect(() => {
     try {
       if (timer) localStorage.setItem(TIMER_KEY, JSON.stringify(timer));
       else localStorage.removeItem(TIMER_KEY);
     } catch {
-      // ignore storage failures
+      // storage unavailable (e.g. private mode)
     }
   }, [timer]);
 
-  // Advance "now" each second, and re-sync immediately on resume — the timer's
-  // remaining is derived from wall-clock time, so it can't drift or restart
-  // when the device sleeps or the tab is throttled in the background.
   useEffect(() => {
     const tick = () => setNow(Date.now());
     const iv = setInterval(tick, 1000);
+    // Re-sync on resume so a slept or backgrounded tab shows the right time.
     const onVisible = () => {
       if (!document.hidden) tick();
     };
@@ -193,9 +182,8 @@ export default function LiftPlan({ initialLogs }) {
   }
 
   /**
-   * Starts the rest timer.
-   * @param {number} sec - Duration in seconds.
-   * @param {string} label - The timer label.
+   * @param {number} sec
+   * @param {string} label
    */
   function startTimer(sec, label) {
     setTimer({
@@ -323,28 +311,23 @@ export default function LiftPlan({ initialLogs }) {
     applyWeight(weightEditor.ex, weightEditor.set, v);
   }
 
-  /**
-   * Pauses or resumes the running rest timer. Pausing freezes the current
-   * remaining; resuming re-anchors the end timestamp to wall-clock time.
-   */
+  /** Pauses (freezing remaining) or resumes (re-anchoring endsAt) the timer. */
   function togglePause() {
     setTimer((t) => {
       if (!t) return t;
       if (t.paused) {
         return { ...t, paused: false, endsAt: Date.now() + t.remaining * 1000 };
       }
-      const remaining = timerRemaining(t, Date.now());
+      const remaining = getRemainingTimerDurationSeconds(t, Date.now());
       return { ...t, paused: true, remaining };
     });
   }
 
-  /**
-   * Adds 30 seconds to the rest timer, keeping the ring within full.
-   */
+  /** Adds 30 seconds to the timer, keeping the ring within full. */
   function addTime() {
     setTimer((t) => {
       if (!t) return t;
-      const r = timerRemaining(t, Date.now()) + 30;
+      const r = getRemainingTimerDurationSeconds(t, Date.now()) + 30;
       const total = Math.max(t.total, r);
       if (t.paused) return { ...t, remaining: r, total };
       return { ...t, endsAt: Date.now() + r * 1000, total };
@@ -422,7 +405,7 @@ export default function LiftPlan({ initialLogs }) {
   let timerTime = "";
   let timerLabel = "";
   if (timer) {
-    const remaining = timerRemaining(timer, now);
+    const remaining = getRemainingTimerDurationSeconds(timer, now);
     const frac = timer.total ? remaining / timer.total : 0;
     timerOffset = (C * (1 - frac)).toFixed(1);
     timerTime = fmt(remaining);
