@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import styles from "./lift.module.css";
-import { SESSIONS, WEEK, ABBR, NOTES, CONFIG } from "./data";
+import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
+import { buildLogs } from "./logs";
 import { saveCells } from "./actions";
 
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
@@ -11,7 +12,6 @@ const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
 
 // Program week 1 begins the Monday of the week of 2026-06-18 (Thu).
 const PROGRAM_START = new Date(2026, 5, 15);
-const PROGRAM_WEEKS = 6;
 
 /**
  * Derives the current program week (1–PROGRAM_WEEKS) from today's date,
@@ -22,69 +22,6 @@ function currentWeek() {
   const ms = Date.now() - PROGRAM_START.getTime();
   const w = Math.floor(ms / (7 * 24 * 60 * 60 * 1000)) + 1;
   return Math.min(PROGRAM_WEEKS, Math.max(1, w));
-}
-
-/**
- * Builds the log structure — keyed by week, then session id, then an array of
- * exercises, each holding an array of { weight, reps, done, carried } cells.
- * Saved rows are overlaid on top, then untouched cells inherit the weight and
- * reps from the most recent earlier week that logged the same set (carried),
- * so each week rolls forward from the last.
- * @param {Array} [savedRows] - Rows loaded from Postgres.
- * @return {Object} The seeded logs keyed by week and session id.
- */
-function buildLogs(savedRows = []) {
-  const o = {};
-  for (let w = 1; w <= PROGRAM_WEEKS; w++) {
-    o[w] = {};
-    for (const k of Object.keys(SESSIONS)) {
-      o[w][k] = SESSIONS[k].ex.map((e) => ({
-        sets: Array.from({ length: e.sets }, () => ({
-          weight: "",
-          reps: "",
-          done: false,
-          carried: false,
-        })),
-      }));
-    }
-  }
-  for (const r of savedRows) {
-    const session = o[r.week]?.[r.session_type];
-    const cell = session?.[r.exercise_idx]?.sets?.[r.set_idx];
-    if (!cell) continue;
-    cell.weight = r.weight ?? "";
-    cell.reps = r.reps ?? "";
-    cell.done = !!r.done;
-  }
-  rollForward(o);
-  return o;
-}
-
-/**
- * Fills each untouched cell with the weight and reps from the nearest earlier
- * week that logged the same set, marking it carried. Carried cells are skipped
- * as sources so values only roll forward from weeks the user actually logged.
- * @param {Object} o - The logs structure to mutate in place.
- */
-function rollForward(o) {
-  for (let w = 2; w <= PROGRAM_WEEKS; w++) {
-    for (const k of Object.keys(SESSIONS)) {
-      o[w][k].forEach((exercise, ei) => {
-        exercise.sets.forEach((cell, si) => {
-          if (cell.weight !== "" || cell.reps !== "" || cell.done) return;
-          for (let pw = w - 1; pw >= 1; pw--) {
-            const src = o[pw][k][ei].sets[si];
-            if (!src.carried && (src.weight !== "" || src.reps !== "")) {
-              cell.weight = src.weight;
-              cell.reps = src.reps;
-              cell.carried = true;
-              break;
-            }
-          }
-        });
-      });
-    }
-  }
 }
 
 /**
@@ -264,7 +201,9 @@ export default function LiftPlan({ initialLogs }) {
     if (isNaN(cur)) cur = lo - delta;
     let nv = cur + delta;
     if (nv < 0) nv = 0;
-    commit([{ ex, set, cell: { ...cur0, reps: String(nv), carried: false } }]);
+    commit([
+      { ex, set, cell: { ...cur0, reps: String(nv), isRolledForward: false } },
+    ]);
   }
 
   /**
@@ -276,7 +215,7 @@ export default function LiftPlan({ initialLogs }) {
   function inputReps(ex, set, value) {
     const v = value.replace(/[^0-9]/g, "");
     const cur0 = logs[week][sid][ex].sets[set];
-    commit([{ ex, set, cell: { ...cur0, reps: v, carried: false } }]);
+    commit([{ ex, set, cell: { ...cur0, reps: v, isRolledForward: false } }]);
   }
 
   /**
@@ -288,7 +227,7 @@ export default function LiftPlan({ initialLogs }) {
   function toggleDone(ex, set) {
     const cur0 = logs[week][sid][ex].sets[set];
     const was = cur0.done;
-    const cell = { ...cur0, done: !was, carried: false };
+    const cell = { ...cur0, done: !was, isRolledForward: false };
     if (!was && cell.reps === "") cell.reps = String(SESSIONS[sid].ex[ex].lo);
     commit([{ ex, set, cell }]);
     if (!was && CONFIG.autoTimer) {
@@ -308,14 +247,14 @@ export default function LiftPlan({ initialLogs }) {
   function applyWeight(ex, set, value) {
     const arr = logs[week][sid][ex].sets;
     const updates = [
-      { ex, set, cell: { ...arr[set], weight: value, carried: false } },
+      { ex, set, cell: { ...arr[set], weight: value, isRolledForward: false } },
     ];
     for (let j = set + 1; j < arr.length; j++) {
       if (!arr[j].done) {
         updates.push({
           ex,
           set: j,
-          cell: { ...arr[j], weight: value, carried: false },
+          cell: { ...arr[j], weight: value, isRolledForward: false },
         });
       }
     }
@@ -643,7 +582,9 @@ export default function LiftPlan({ initialLogs }) {
                             <span
                               className={`${styles.weightVal} ${
                                 s.weight === "" ? styles.weightEmpty : ""
-                              } ${s.carried ? styles.carried : ""}`}
+                              } ${
+                                s.isRolledForward ? styles.rolledForward : ""
+                              }`}
                             >
                               {s.weight === "" ? "—" : s.weight}
                             </span>
@@ -659,7 +600,7 @@ export default function LiftPlan({ initialLogs }) {
                             </button>
                             <input
                               className={`${styles.repsInput} ${
-                                s.carried ? styles.carried : ""
+                                s.isRolledForward ? styles.rolledForward : ""
                               }`}
                               value={s.reps}
                               inputMode="numeric"

@@ -378,8 +378,8 @@
 }
 
 /* Weight/reps rolled forward from last week — shown until confirmed. */
-.weightVal.carried,
-.repsInput.carried {
+.weightVal.rolledForward,
+.repsInput.rolledForward {
   color: var(--faint);
   font-weight: 500;
 }
