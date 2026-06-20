@@ -56,9 +56,7 @@ export default function WorkoutCelebration({ sid, onDone }) {
         <span
           key={p.id}
           className={
-            p.clockwise
-              ? styles.celebrationEmojiCw
-              : styles.celebrationEmojiCcw
+            p.clockwise ? styles.celebrationEmojiCw : styles.celebrationEmojiCcw
           }
           style={{
             left: `${p.left}%`,
