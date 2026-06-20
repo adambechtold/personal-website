@@ -481,19 +481,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             onClick={() => setNotesOpen(true)}
             aria-label="How to run it"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 11v5" />
-              <path d="M12 7.4v.01" />
-            </svg>
+            <span className={styles.infoBadge}>i</span>
           </Button>
         </div>
 
@@ -826,9 +814,8 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
           >
             +30
           </Button>
-          <Button
-            variant="primary"
-            className={styles.timerDismiss}
+          <button
+            className={`${styles.doneBox} ${styles.doneBoxChecked}`}
             onClick={() => setTimer(null)}
             aria-label="Dismiss timer"
           >
@@ -844,7 +831,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             >
               <path d="M5 12l5 5L20 6" />
             </svg>
-          </Button>
+          </button>
         </Card>
       )}
 
