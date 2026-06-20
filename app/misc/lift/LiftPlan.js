@@ -793,15 +793,14 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
           >
             +30
           </Button>
-          <Button
-            variant="primary"
-            className={styles.timerDismiss}
+          <button
+            className={`${styles.doneBox} ${styles.doneBoxChecked}`}
             onClick={() => setTimer(null)}
             aria-label="Dismiss timer"
           >
             <svg
-              width="20"
-              height="20"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="#fff"
@@ -811,7 +810,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             >
               <path d="M5 12l5 5L20 6" />
             </svg>
-          </Button>
+          </button>
         </Card>
       )}
 
