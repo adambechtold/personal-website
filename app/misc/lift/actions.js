@@ -2,6 +2,7 @@
 
 import { sql } from "@vercel/postgres";
 import { SESSIONS } from "./data";
+import { requireAuth } from "../../lib/auth";
 
 const VALID_SESSIONS = new Set(Object.keys(SESSIONS));
 const PROGRAM_WEEKS = 6;
@@ -33,6 +34,7 @@ export async function ensureSchema() {
  * @return {Promise<Array>} The saved rows (only cells that have been written).
  */
 export async function loadLogs() {
+  await requireAuth();
   await ensureSchema();
   const { rows } = await sql`
     SELECT week, session_type, exercise_idx, set_idx, weight, reps, done
@@ -76,6 +78,7 @@ function normalizeCell(c) {
  *   ({ week, session_type, exercise_idx, set_idx, weight, reps, done }).
  */
 export async function saveCells(cells) {
+  await requireAuth();
   if (!Array.isArray(cells) || cells.length === 0) return;
   await ensureSchema();
   for (const raw of cells) {
