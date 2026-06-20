@@ -717,11 +717,13 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                         value={runEntry.distance}
                         inputMode="decimal"
                         placeholder="0.0"
-                        onChange={(e) =>
-                          commitRun(
-                            e.target.value.replace(/[^0-9.]/g, ""),
-                            runEntry.done
-                          )
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, "");
+                          const dot = raw.indexOf(".");
+                          const v =
+                            dot === -1 ? raw : raw.slice(0, dot + 3);
+                          commitRun(v, runEntry.done);
+                        }}
                         }
                       />
                       <span className={styles.runDistanceUnit}>mi</span>
