@@ -460,17 +460,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             onClick={() => setNotesOpen(true)}
             aria-label="How to run it"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              strokeLinecap="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 11v5" stroke="#fff" strokeWidth="2.2" fill="none" />
-              <path d="M12 7.4v.01" stroke="#fff" strokeWidth="2.2" fill="none" />
-            </svg>
+            <span className={styles.infoBadge}>i</span>
           </Button>
         </div>
 
