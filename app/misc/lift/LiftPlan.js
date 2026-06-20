@@ -7,7 +7,19 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
 import { buildLogs } from "./logs";
-import { saveCells, saveRunLog } from "./actions";
+import {
+  buildSchedules,
+  scheduleForWeek,
+  defaultDaySchedule,
+  moveInSchedule,
+} from "./schedule";
+import {
+  saveCells,
+  saveRunLog,
+  saveSchedule,
+  resetSchedule,
+  moveRunLog,
+} from "./actions";
 import WorkoutCelebration from "./WorkoutCelebration";
 
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
@@ -82,13 +94,55 @@ function isValidTimer(timer) {
 }
 
 /**
+ * A small lightning-bolt glyph marking a day that also carries a run.
+ * @param {{className: string}} props - Optional class for sizing/color.
+ * @return {React.ReactElement} The glyph.
+ */
+function RunGlyph({ className }) {
+  return (
+    <svg
+      width="9"
+      height="9"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
+    </svg>
+  );
+}
+
+RunGlyph.propTypes = { className: PropTypes.string };
+
+/**
+ * Summarizes what a schedule entry holds, for the move picker's day list.
+ * @param {{lift: ?string, run: boolean}} e - A day's schedule entry.
+ * @return {string} A label like "Lo A + Run", "Run", or "Open".
+ */
+function describeDay(e) {
+  const parts = [];
+  if (e.lift) parts.push(ABBR[e.lift]);
+  if (e.run) parts.push("Run");
+  return parts.length ? parts.join(" + ") : "Open";
+}
+
+/**
  * Summer Lifting Plan — a phone-first logger for a 4-day Upper/Lower block.
  * Logged sets persist to Postgres, scoped per week, so reloading resumes
  * where you left off.
  * @param {{initialLogs: Array}} props - Saved set rows from the database.
  * @return {React.ReactElement} The rendered logger.
  */
-export default function LiftPlan({ initialLogs, initialRunLogs }) {
+export default function LiftPlan({
+  initialLogs,
+  initialRunLogs,
+  initialSchedule,
+}) {
   const todayIdx = useMemo(() => DAY_MAP[new Date().getDay()], []);
 
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
@@ -96,10 +150,14 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   const [expanded, setExpanded] = useState(0);
   const [logs, setLogs] = useState(() => buildLogs(initialLogs));
   const [runLogs, setRunLogs] = useState(() => buildRunLogs(initialRunLogs));
+  const [schedule, setSchedule] = useState(() =>
+    buildSchedules(initialSchedule)
+  );
   const [timer, setTimer] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
   const [weightEditor, setWeightEditor] = useState(null);
+  const [movePicker, setMovePicker] = useState(null);
   const [celebrateSid, setCelebrateSid] = useState(null);
   const prevPctRef = useRef({});
   const celebratedRef = useRef(new Set());
@@ -152,9 +210,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
     };
   }, []);
 
-  const day = WEEK[selectedIdx];
-  const sid = day.s;
-  const isWorkout = sid !== "run" && sid !== "off";
+  const weekSchedule = scheduleForWeek(schedule, week);
+  const entry = weekSchedule[selectedIdx];
+  const sid = entry.lift;
+  const isWorkout = sid != null;
+  const hasRun = entry.run;
 
   /**
    * Selects a day in the strip and collapses any expanded exercise.
@@ -300,6 +360,45 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   }
 
   /**
+   * Moves the selected day's lift or run to another day for the current week,
+   * persists the new schedule, and follows the selection to the target day. For
+   * runs, the logged distance migrates with it.
+   * @param {"lift"|"run"} track - Which track to move.
+   * @param {number} fromIdx - The origin day index.
+   * @param {number} toIdx - The destination day index.
+   */
+  function moveWorkout(track, fromIdx, toIdx) {
+    if (fromIdx === toIdx) {
+      setMovePicker(null);
+      return;
+    }
+    const nextWeek = moveInSchedule(weekSchedule, track, fromIdx, toIdx);
+    setSchedule((prev) => ({ ...prev, [week]: nextWeek }));
+    saveSchedule(week, nextWeek).catch(() => {});
+    if (track === "run") {
+      setRunLogs((prev) => {
+        const wkLogs = { ...(prev[week] ?? {}) };
+        if (wkLogs[fromIdx]) {
+          wkLogs[toIdx] = wkLogs[fromIdx];
+          delete wkLogs[fromIdx];
+        }
+        return { ...prev, [week]: wkLogs };
+      });
+      moveRunLog(week, fromIdx, toIdx).catch(() => {});
+    }
+    setSelectedIdx(toIdx);
+    setExpanded(0);
+    setMovePicker(null);
+  }
+
+  /** Restores the current week to the default Mon–Fri template. */
+  function resetWeek() {
+    setSchedule((prev) => ({ ...prev, [week]: defaultDaySchedule() }));
+    resetSchedule(week).catch(() => {});
+    setMovePicker(null);
+  }
+
+  /**
    * Applies a unit-aware increment chip to the open weight editor.
    * @param {number} delta - The amount to add (may be negative).
    */
@@ -356,8 +455,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   let meta = "";
   let exercises = [];
   let pct = 0;
-  let restTitle = "";
-  let restNote = "";
 
   if (isWorkout) {
     const sess = SESSIONS[sid];
@@ -390,16 +487,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
     meta =
       sess.ex.length + " lifts · " + totalSets + " sets · ~" + estMin + " min";
     pct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
-  } else {
-    if (sid === "run") {
-      restTitle = "Run";
-      restNote =
-        "Easy aerobic miles. If you run the morning before a lower day, keep it easy — legs come first.";
-    } else {
-      restTitle = "Rest Day";
-      restNote =
-        "Full rest. The work you put in this week turns into muscle now. Eat, sleep, repeat.";
-    }
   }
 
   // Trigger celebration on the first render where pct reaches 100.
@@ -497,7 +584,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
           {WEEK.map((w, i) => {
             const active = i === selectedIdx;
             const isToday = i === todayIdx;
-            const quiet = w.s === "run" || w.s === "off";
+            const e = weekSchedule[i];
+            const liftAbbr = e.lift ? ABBR[e.lift] : null;
+            const label = liftAbbr ?? (e.run ? "Run" : "Off");
+            const quiet = !liftAbbr;
+            const showRunMark = e.run && liftAbbr;
             return (
               <button
                 key={i}
@@ -512,7 +603,8 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                     quiet ? styles.dayLabQuiet : ""
                   }`}
                 >
-                  {ABBR[w.s]}
+                  {label}
+                  {showRunMark && <RunGlyph className={styles.dayRunMark} />}
                 </span>
                 <span
                   className={`${styles.dayDot} ${
@@ -528,9 +620,20 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
         {isWorkout && (
           <div>
             <div className={styles.sessionHeader}>
-              <div className={styles.sessionTitleRow}>
-                <h1 className={styles.sessionTitle}>{title}</h1>
-                <span className={styles.sessionLean}>{lean}</span>
+              <div className={styles.sessionTopRow}>
+                <div className={styles.sessionTitleRow}>
+                  <h1 className={styles.sessionTitle}>{title}</h1>
+                  <span className={styles.sessionLean}>{lean}</span>
+                </div>
+                <Button
+                  variant="outlined"
+                  className={styles.moveBtn}
+                  onClick={() =>
+                    setMovePicker({ track: "lift", fromIdx: selectedIdx })
+                  }
+                >
+                  Move
+                </Button>
               </div>
               <div className={styles.sessionMeta}>{meta}</div>
               <div className={styles.progressTrack}>
@@ -688,14 +791,101 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
           </div>
         )}
 
-        {/* State B — run / off day */}
-        {!isWorkout && (
+        {/* Run — its own card; slim when it shares the day with a lift */}
+        {hasRun && (
           <div className={styles.restWrap}>
             <Card
               className={`${styles.restCard} ${
-                sid === "run" && runEntry.done ? styles.restCardDone : ""
-              }`}
+                isWorkout ? styles.runCardSlim : ""
+              } ${runEntry.done ? styles.restCardDone : ""}`}
             >
+              <div className={styles.runHeader}>
+                {!isWorkout && (
+                  <div className={styles.restIcon}>
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
+                    </svg>
+                  </div>
+                )}
+                <div className={styles.runHeaderText}>
+                  <h1 className={styles.restTitle}>Run</h1>
+                  {!isWorkout && (
+                    <p className={styles.restNote}>
+                      Easy aerobic miles. If you run the morning before a lower
+                      day, keep it easy — legs come first.
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outlined"
+                  className={styles.moveBtn}
+                  onClick={() =>
+                    setMovePicker({ track: "run", fromIdx: selectedIdx })
+                  }
+                >
+                  Move
+                </Button>
+              </div>
+
+              <div className={styles.runLogger}>
+                <div className={styles.runLoggerRow}>
+                  <div className={styles.runDistanceField}>
+                    <input
+                      className={styles.runDistanceInput}
+                      value={runEntry.distance}
+                      inputMode="decimal"
+                      placeholder="0.0"
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9.]/g, "");
+                        const dot = raw.indexOf(".");
+                        const v = dot === -1 ? raw : raw.slice(0, dot + 3);
+                        commitRun(v, runEntry.done);
+                      }}
+                    />
+                    <span className={styles.runDistanceUnit}>mi</span>
+                  </div>
+                  <button
+                    className={`${styles.runDoneBtn} ${
+                      runEntry.done ? styles.runDoneBtnChecked : ""
+                    }`}
+                    onClick={() => commitRun(runEntry.distance, !runEntry.done)}
+                  >
+                    {runEntry.done && (
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 12l5 5L20 6" />
+                      </svg>
+                    )}
+                    {runEntry.done ? "Done" : "Mark done"}
+                  </button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Rest — nothing scheduled this day */}
+        {!isWorkout && !hasRun && (
+          <div className={styles.restWrap}>
+            <Card className={styles.restCard}>
               <div className={styles.restIcon}>
                 <svg
                   width="22"
@@ -711,54 +901,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                   <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
                 </svg>
               </div>
-              <h1 className={styles.restTitle}>{restTitle}</h1>
-              <p className={styles.restNote}>{restNote}</p>
-
-              {sid === "run" && (
-                <div className={styles.runLogger}>
-                  <div className={styles.runLoggerRow}>
-                    <div className={styles.runDistanceField}>
-                      <input
-                        className={styles.runDistanceInput}
-                        value={runEntry.distance}
-                        inputMode="decimal"
-                        placeholder="0.0"
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/[^0-9.]/g, "");
-                          const dot = raw.indexOf(".");
-                          const v = dot === -1 ? raw : raw.slice(0, dot + 3);
-                          commitRun(v, runEntry.done);
-                        }}
-                      />
-                      <span className={styles.runDistanceUnit}>mi</span>
-                    </div>
-                    <button
-                      className={`${styles.runDoneBtn} ${
-                        runEntry.done ? styles.runDoneBtnChecked : ""
-                      }`}
-                      onClick={() =>
-                        commitRun(runEntry.distance, !runEntry.done)
-                      }
-                    >
-                      {runEntry.done && (
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M5 12l5 5L20 6" />
-                        </svg>
-                      )}
-                      {runEntry.done ? "Done" : "Mark done"}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <h1 className={styles.restTitle}>Rest Day</h1>
+              <p className={styles.restNote}>
+                Full rest. The work you put in this week turns into muscle now.
+                Eat, sleep, repeat.
+              </p>
             </Card>
           </div>
         )}
@@ -889,6 +1036,63 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
         </div>
       )}
 
+      {/* Overlay — move workout to another day */}
+      {movePicker && (
+        <div className={styles.modalWrap}>
+          <div className={styles.scrim} onClick={() => setMovePicker(null)} />
+          <Card className={styles.weightDialog}>
+            <div className={styles.weightEyebrow}>
+              Move{" "}
+              {movePicker.track === "lift"
+                ? SESSIONS[weekSchedule[movePicker.fromIdx].lift]?.title
+                : "Run"}{" "}
+              to…
+            </div>
+            <div className={styles.movePickerList}>
+              {WEEK.map((w, i) => {
+                const e = weekSchedule[i];
+                const occupied =
+                  movePicker.track === "lift" ? e.lift != null : e.run;
+                const isOrigin = i === movePicker.fromIdx;
+                const disabled = isOrigin || occupied;
+                return (
+                  <button
+                    key={i}
+                    className={`${styles.moveDay} ${
+                      disabled ? styles.moveDayDisabled : ""
+                    }`}
+                    disabled={disabled}
+                    onClick={() =>
+                      moveWorkout(movePicker.track, movePicker.fromIdx, i)
+                    }
+                  >
+                    <span className={styles.moveDayName}>{w.d}</span>
+                    <span className={styles.moveDaySub}>{describeDay(e)}</span>
+                    {isOrigin && (
+                      <span className={styles.moveDayTag}>Current</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outlined"
+              className={styles.moveReset}
+              onClick={resetWeek}
+            >
+              Reset week to default
+            </Button>
+            <Button
+              variant="primary"
+              className={styles.weightDone}
+              onClick={() => setMovePicker(null)}
+            >
+              Cancel
+            </Button>
+          </Card>
+        </div>
+      )}
+
       {/* Overlay 2 — "How to run it" bottom sheet */}
       {celebrateSid && (
         <WorkoutCelebration
@@ -931,9 +1135,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
 LiftPlan.propTypes = {
   initialLogs: PropTypes.array,
   initialRunLogs: PropTypes.array,
+  initialSchedule: PropTypes.array,
 };
 
 LiftPlan.defaultProps = {
   initialLogs: [],
   initialRunLogs: [],
+  initialSchedule: [],
 };

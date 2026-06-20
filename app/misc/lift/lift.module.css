@@ -158,16 +158,38 @@
   background: var(--accent);
 }
 
+/* dayRunMark — tiny run glyph beside the lift label on a doubled-up day */
+.dayRunMark {
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
 /* ── Session header ─────────────────────────────────────────────── */
 
 .sessionHeader {
   padding: 0.875rem 0.5rem 0.25rem;
 }
 
+.sessionTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
 .sessionTitleRow {
   display: flex;
   align-items: baseline;
   gap: 0.7rem;
+}
+
+/* moveBtn — small outlined chip; visual from Button, sizing only */
+.moveBtn {
+  flex: none;
+  height: 32px;
+  padding: 0 0.85rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
 .sessionTitle {
@@ -517,6 +539,28 @@
   background: rgba(60, 132, 247, 0.03);
 }
 
+/* runHeader — title (+ note) on the left, Move button on the right */
+.runHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.runHeader .restIcon {
+  margin-bottom: 0;
+}
+
+.runHeaderText {
+  flex: 1;
+  min-width: 0;
+}
+
+/* runCardSlim — compact run card when it shares the day with a lift */
+.runCardSlim {
+  padding: 16px 18px;
+}
+
 .runLogger {
   margin-top: 18px;
   padding-top: 18px;
@@ -735,6 +779,65 @@
   width: 100%;
   margin-top: 14px;
   height: 48px;
+}
+
+/* ── Move picker ────────────────────────────────────────────────── */
+
+.movePickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.moveDay {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  background: #fff;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.moveDayDisabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.moveDayName {
+  width: 38px;
+  flex: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.moveDaySub {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.moveDayTag {
+  flex: none;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* moveReset — visual from Button outlined; full width + height */
+.moveReset {
+  width: 100%;
+  margin-top: 14px;
+  height: 44px;
 }
 
 /* ── Notes sheet ────────────────────────────────────────────────── */
