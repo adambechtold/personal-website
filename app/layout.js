@@ -1,6 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Montserrat } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 import GoogleAnalytics from "./components/GoogleAnalytics/GoogleAnalytics";
@@ -25,7 +26,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <GoogleAnalytics GA_TRACKING_ID={process.env.GA_TRACKING_ID} />
-      <body className={montserratFont.className}>{children}</body>
+      <body className={montserratFont.className}>
+        {children}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
