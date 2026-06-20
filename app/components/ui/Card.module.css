@@ -1,0 +1,11 @@
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+/* Soft accent variant — used for summary/highlight cards */
+.accent {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
