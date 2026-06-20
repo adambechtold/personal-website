@@ -590,6 +590,18 @@
   color: #ffffff;
 }
 
+.runMapLink {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.runMapLink:hover {
+  text-decoration: underline;
+}
+
 /* ── Rest timer ─────────────────────────────────────────────────── */
 
 /* timer — visual from Card; position, sizing, and shadow here */
