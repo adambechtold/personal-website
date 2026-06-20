@@ -408,7 +408,10 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
     }
   }
 
-  const runEntry = runLogs[week]?.[selectedIdx] ?? { distance: "", done: false };
+  const runEntry = runLogs[week]?.[selectedIdx] ?? {
+    distance: "",
+    done: false,
+  };
 
   const C = 113.1;
   let timerOffset = 0;
@@ -720,11 +723,9 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                         onChange={(e) => {
                           const raw = e.target.value.replace(/[^0-9.]/g, "");
                           const dot = raw.indexOf(".");
-                          const v =
-                            dot === -1 ? raw : raw.slice(0, dot + 3);
+                          const v = dot === -1 ? raw : raw.slice(0, dot + 3);
                           commitRun(v, runEntry.done);
                         }}
-                        }
                       />
                       <span className={styles.runDistanceUnit}>mi</span>
                     </div>
