@@ -408,7 +408,12 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
     if (!isWorkout) return;
     const key = `${week}-${sid}`;
     const prev = prevPctRef.current[key];
-    if (pct === 100 && prev !== undefined && prev < 100 && !celebratedRef.current.has(key)) {
+    if (
+      pct === 100 &&
+      prev !== undefined &&
+      prev < 100 &&
+      !celebratedRef.current.has(key)
+    ) {
       celebratedRef.current.add(key);
       setCelebrateSid(sid);
     }
