@@ -4,12 +4,11 @@
 
 .page {
   --accent: #3c84f7;
-  --accent-soft: rgba(60, 132, 247, 0.1);
+  --accent-soft: #f7f9ff;
   --ink: #1a1a1a;
   --muted: #888;
-  --faint: #aeb6c2;
-  --line: #e6eaf1;
-  --field: #f5f7fb;
+  --faint: #aaa;
+  --line: #eee;
 
   min-height: 100vh;
   padding: 1rem 0.75rem 7rem;
@@ -51,10 +50,10 @@
 .squareBtn {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
-  background: #f0f3f8;
-  border: 1px solid #e2e7ef;
-  color: #4a5260;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,9 +76,9 @@
 .infoBtn {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
-  background: #f0f3f8;
-  border: 1px solid #e2e7ef;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,9 +89,9 @@
 .deload {
   margin: 0.875rem 0.5rem 0;
   padding: 0.7rem 0.875rem;
-  border-radius: 13px;
+  border-radius: 8px;
   background: var(--accent-soft);
-  border: 1px solid rgba(60, 132, 247, 0.22);
+  border: 1px solid #dce8ff;
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1.45;
@@ -116,9 +115,9 @@
 .dayChip {
   flex: none;
   width: 46px;
-  border-radius: 15px;
-  border: 1px solid var(--line);
-  background: #f3f5f9;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  background: none;
   padding: 9px 0;
   display: flex;
   flex-direction: column;
@@ -145,7 +144,7 @@
 .dayLab {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #4a5260;
+  color: #555;
 }
 
 .dayLabQuiet {
@@ -223,9 +222,8 @@
 .exCard {
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(30, 46, 80, 0.05);
 }
 
 .exHeader {
@@ -243,7 +241,7 @@
   width: 30px;
   height: 30px;
   flex: none;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -341,11 +339,11 @@
   gap: 8px;
   align-items: center;
   padding: 5px 4px;
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 .setRowDone {
-  background: rgba(60, 132, 247, 0.06);
+  background: var(--accent-soft);
 }
 
 .setRow .colSet {
@@ -361,9 +359,9 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  background: var(--field);
-  border: 1px solid #e2e7ef;
-  border-radius: 11px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
   padding: 0;
 }
 
@@ -374,7 +372,7 @@
 }
 
 .weightEmpty {
-  color: #b3bcc9;
+  color: var(--faint);
 }
 
 /* Weight/reps rolled forward from last week — shown until confirmed. */
@@ -394,9 +392,9 @@
   width: 96px;
   display: flex;
   align-items: center;
-  background: var(--field);
-  border: 1px solid #e2e7ef;
-  border-radius: 11px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -430,8 +428,8 @@
   width: 36px;
   height: 36px;
   flex: none;
-  border-radius: 11px;
-  border: 1.5px solid #cdd5e0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
   background: transparent;
   display: flex;
   align-items: center;
@@ -452,15 +450,15 @@
 
 .restCard {
   background: #ffffff;
-  border: 1.5px solid rgba(60, 132, 247, 0.32);
-  border-radius: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   padding: 26px 22px;
 }
 
 .restIcon {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--accent-soft);
   display: flex;
   align-items: center;
@@ -481,15 +479,15 @@
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.55;
-  color: #5c6573;
+  color: #555;
 }
 
 .nextCard {
   width: 100%;
   margin-top: 12px;
   background: #ffffff;
-  border: 1.5px solid rgba(60, 132, 247, 0.32);
-  border-radius: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   padding: 16px 18px;
   display: flex;
   align-items: center;
@@ -524,13 +522,13 @@
   margin: 0 auto;
   z-index: 35;
   background: #ffffff;
-  border: 1.5px solid rgba(60, 132, 247, 0.32);
-  border-radius: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   padding: 12px 13px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 18px 44px rgba(30, 46, 80, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .ring {
@@ -561,12 +559,13 @@
   height: 38px;
   min-width: 38px;
   padding: 0 0.4rem;
-  border-radius: 12px;
-  background: #eef1f7;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ink);
+  color: #555;
   font-size: 0.8125rem;
   font-weight: 600;
 }
@@ -574,8 +573,9 @@
 .timerDismiss {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
+  border-radius: 6px;
   background: var(--accent);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -606,9 +606,9 @@
   max-width: 320px;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 26px;
+  border-radius: 8px;
   padding: 22px 20px 18px;
-  box-shadow: 0 30px 70px rgba(20, 30, 60, 0.28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .weightEyebrow {
@@ -662,10 +662,10 @@
 .chipMinus {
   flex: 1;
   height: 44px;
-  border-radius: 13px;
-  background: #f0f3f8;
-  border: 1px solid #e2e7ef;
-  color: #4a5260;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -673,9 +673,9 @@
 .chipPlus {
   flex: 1;
   height: 44px;
-  border-radius: 13px;
-  background: var(--accent-soft);
-  border: 1px solid rgba(60, 132, 247, 0.28);
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #3c84f7;
   color: var(--accent);
   font-size: 0.875rem;
   font-weight: 600;
@@ -694,11 +694,13 @@
   width: 100%;
   margin-top: 14px;
   height: 48px;
-  border-radius: 14px;
+  border-radius: 6px;
   background: var(--accent);
+  border: none;
   color: #ffffff;
   font-size: 0.9375rem;
   font-weight: 600;
+  font-family: inherit;
 }
 
 /* ── Notes sheet ────────────────────────────────────────────────── */
@@ -715,8 +717,8 @@
 .sheet {
   position: relative;
   background: #ffffff;
-  border-top-left-radius: 28px;
-  border-top-right-radius: 28px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
   border-top: 1px solid var(--line);
   max-height: 80%;
   overflow-y: auto;
@@ -736,7 +738,7 @@
   width: 38px;
   height: 4px;
   border-radius: 2px;
-  background: #d7dde6;
+  background: #ccc;
 }
 
 .sheetHeader {
@@ -756,9 +758,10 @@
 .sheetClose {
   width: 34px;
   height: 34px;
-  border-radius: 11px;
-  background: #eef1f7;
-  color: #5c6573;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -768,7 +771,7 @@
 
 .note {
   padding: 15px 0;
-  border-bottom: 1px solid #eef1f6;
+  border-bottom: 1px solid var(--line);
 }
 
 .noteHead {
@@ -782,5 +785,5 @@
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.55;
-  color: #5c6573;
+  color: #555;
 }
