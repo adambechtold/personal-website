@@ -352,9 +352,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   let pct = 0;
   let restTitle = "";
   let restNote = "";
-  let hasNext = false;
-  let nextIdx = 0;
-  let nextName = "";
 
   if (isWorkout) {
     const sess = SESSIONS[sid];
@@ -396,15 +393,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
       restTitle = "Rest Day";
       restNote =
         "Full rest. The work you put in this week turns into muscle now. Eat, sleep, repeat.";
-    }
-    for (let k = 1; k <= 7; k++) {
-      const j = (selectedIdx + k) % 7;
-      if (WEEK[j].s !== "run" && WEEK[j].s !== "off") {
-        hasNext = true;
-        nextIdx = j;
-        nextName = SESSIONS[WEEK[j].s].title + " · " + SESSIONS[WEEK[j].s].lean;
-        break;
-      }
     }
   }
 
@@ -757,28 +745,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                 </div>
               )}
             </div>
-            {hasNext && (
-              <button
-                className={styles.nextCard}
-                onClick={() => selectDay(nextIdx)}
-              >
-                <div>
-                  <div className={styles.nextEyebrow}>Next session</div>
-                  <div className={styles.nextName}>{nextName}</div>
-                </div>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3c84f7"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
-              </button>
-            )}
           </div>
         )}
       </div>
