@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 import Button from "../../components/ui/Button";
@@ -8,6 +8,7 @@ import Card from "../../components/ui/Card";
 import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
 import { buildLogs } from "./logs";
 import { saveCells, saveRunLog } from "./actions";
+import WorkoutCelebration from "./WorkoutCelebration";
 
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
 const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
@@ -99,6 +100,9 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
   const [weightEditor, setWeightEditor] = useState(null);
+  const [celebrateSid, setCelebrateSid] = useState(null);
+  const prevPctRef = useRef({});
+  const celebratedRef = useRef(new Set());
 
   const unit = CONFIG.weightUnit;
   const restCompound = CONFIG.restCompound;
@@ -397,6 +401,23 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
         "Full rest. The work you put in this week turns into muscle now. Eat, sleep, repeat.";
     }
   }
+
+  // Trigger celebration on the first render where pct reaches 100.
+  useEffect(() => {
+    if (!isWorkout) return;
+    const key = `${week}-${sid}`;
+    const previousCompletionPct = prevPctRef.current[key];
+    if (
+      pct === 100 &&
+      previousCompletionPct !== undefined &&
+      previousCompletionPct < 100 &&
+      !celebratedRef.current.has(key)
+    ) {
+      celebratedRef.current.add(key);
+      setCelebrateSid(sid);
+    }
+    prevPctRef.current[key] = pct;
+  });
 
   const runEntry = runLogs[week]?.[selectedIdx] ?? {
     distance: "",
@@ -869,6 +890,13 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
       )}
 
       {/* Overlay 2 — "How to run it" bottom sheet */}
+      {celebrateSid && (
+        <WorkoutCelebration
+          sid={celebrateSid}
+          onDone={() => setCelebrateSid(null)}
+        />
+      )}
+
       {notesOpen && (
         <div className={styles.sheetWrap}>
           <div className={styles.scrim} onClick={() => setNotesOpen(false)} />
