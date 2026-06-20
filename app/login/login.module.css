@@ -4,7 +4,6 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: #0f1115;
 }
 
 .card {
@@ -12,61 +11,24 @@
   max-width: 340px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 28px 24px;
-  border-radius: 16px;
-  background: #171a21;
-  border: 1px solid #242833;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
 .title {
   margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: #f2f4f8;
 }
 
 .sub {
-  margin: 0 0 4px;
+  margin: 4px 0 20px;
   font-size: 14px;
-  color: #aeb6c2;
-}
-
-.input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  font-size: 16px;
-  color: #f2f4f8;
-  background: #0f1115;
-  border: 1px solid #2c313d;
-  border-radius: 10px;
-  outline: none;
-}
-
-.input:focus {
-  border-color: #3c84f7;
+  color: #555;
 }
 
 .error {
+  margin: -4px 0 12px;
   font-size: 13px;
-  color: #ff6b6b;
+  color: #d23c3c;
 }
 
 .button {
   margin-top: 4px;
-  padding: 12px 14px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-  background: #3c84f7;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.button:disabled {
-  opacity: 0.6;
-  cursor: default;
 }

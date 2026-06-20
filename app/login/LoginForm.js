@@ -41,7 +41,6 @@ export default function LoginForm({ destination }) {
         <h1 className={styles.title}>Sign in</h1>
         <p className={styles.sub}>Enter the password to continue.</p>
         <input
-          className={styles.input}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
