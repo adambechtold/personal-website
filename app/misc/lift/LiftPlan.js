@@ -406,11 +406,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   useEffect(() => {
     if (!isWorkout) return;
     const key = `${week}-${sid}`;
-    const prev = prevPctRef.current[key];
+    const previousCompletionPct = prevPctRef.current[key];
     if (
       pct === 100 &&
-      prev !== undefined &&
-      prev < 100 &&
+      previousCompletionPct !== undefined &&
+      previousCompletionPct < 100 &&
       !celebratedRef.current.has(key)
     ) {
       celebratedRef.current.add(key);

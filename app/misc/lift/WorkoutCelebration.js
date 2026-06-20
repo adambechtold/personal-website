@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import styles from "./lift.module.css";
+import styles from "./workoutCelebration.module.css";
 
 const SESSION_EMOJIS = {
   upperA: ["💪", "🏋️", "🔥", "⚡", "🦾"],
