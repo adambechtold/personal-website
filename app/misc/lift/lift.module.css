@@ -377,6 +377,13 @@
   color: #b3bcc9;
 }
 
+/* Weight/reps rolled forward from last week — shown until confirmed. */
+.weightVal.rolledForward,
+.repsInput.rolledForward {
+  color: var(--faint);
+  font-weight: 500;
+}
+
 .weightUnit {
   font-size: 0.6875rem;
   font-weight: 500;

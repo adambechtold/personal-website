@@ -100,6 +100,9 @@ export const SESSIONS = {
   },
 };
 
+// Length of the program block, in weeks.
+export const PROGRAM_WEEKS = 6;
+
 // Weekly schedule, index 0–6 = Mon–Sun.
 export const WEEK = [
   { d: "Mon", s: "upperA" },
