@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
 import { buildLogs } from "./logs";
 import { saveCells } from "./actions";
+import WorkoutCelebration from "./WorkoutCelebration";
 
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
 const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
@@ -79,6 +80,9 @@ export default function LiftPlan({ initialLogs }) {
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
   const [weightEditor, setWeightEditor] = useState(null);
+  const [celebrateSid, setCelebrateSid] = useState(null);
+  const prevPctRef = useRef({});
+  const celebratedRef = useRef(new Set());
 
   const unit = CONFIG.weightUnit;
   const restCompound = CONFIG.restCompound;
@@ -375,6 +379,19 @@ export default function LiftPlan({ initialLogs }) {
       }
     }
   }
+
+  // Trigger celebration on the first render where pct reaches 100.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isWorkout) return;
+    const key = `${week}-${sid}`;
+    const prev = prevPctRef.current[key];
+    if (pct === 100 && prev !== undefined && prev < 100 && !celebratedRef.current.has(key)) {
+      celebratedRef.current.add(key);
+      setCelebrateSid(sid);
+    }
+    prevPctRef.current[key] = pct;
+  });
 
   const C = 113.1;
   let timerOffset = 0;
@@ -817,6 +834,13 @@ export default function LiftPlan({ initialLogs }) {
       )}
 
       {/* Overlay 2 — "How to run it" bottom sheet */}
+      {celebrateSid && (
+        <WorkoutCelebration
+          sid={celebrateSid}
+          onDone={() => setCelebrateSid(null)}
+        />
+      )}
+
       {notesOpen && (
         <div className={styles.sheetWrap}>
           <div className={styles.scrim} onClick={() => setNotesOpen(false)} />

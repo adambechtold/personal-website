@@ -784,3 +784,60 @@
   line-height: 1.55;
   color: #5c6573;
 }
+
+/* ── Workout Celebration ─────────────────────────────────────── */
+
+.celebrationOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.celebrationEmojiCw,
+.celebrationEmojiCcw {
+  position: absolute;
+  top: -2.5rem;
+  user-select: none;
+  line-height: 1;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+.celebrationEmojiCw {
+  animation-name: emojiFallCw;
+}
+
+.celebrationEmojiCcw {
+  animation-name: emojiFallCcw;
+}
+
+@keyframes emojiFallCw {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(108vh) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@keyframes emojiFallCcw {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(108vh) rotate(-540deg);
+    opacity: 0;
+  }
+}
