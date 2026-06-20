@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 import Profile from "./components/Profile/Profile";
@@ -33,6 +34,11 @@ export default function Home() {
           <ContentItem title="🎓 Education">
             <Education />
           </ContentItem>
+          <div className={styles.footer}>
+            <Link href="/misc/lift" className={styles.toolsLink}>
+              Tools
+            </Link>
+          </div>
         </div>
       </div>
     </main>
