@@ -7,7 +7,7 @@ const experiences = [
   {
     title: "Software Engineer",
     company: {
-      name: "VibeIq",
+      name: "VibeIQ",
       url: "https://www.vibeiq.com",
     },
     dates: "(march 2024 - present)",
