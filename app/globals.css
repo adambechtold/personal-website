@@ -57,6 +57,7 @@ textarea {
   border: 2px solid var(--accent-color);
   border-radius: 5px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 textarea {
