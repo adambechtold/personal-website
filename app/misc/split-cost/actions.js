@@ -2,6 +2,7 @@
 
 import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "../../lib/auth";
 
 /**
  * Creates or migrates the expenses table.
@@ -93,6 +94,7 @@ function validate(paidBy, amount, expenseDate, adamShares, mattShares) {
  * @param {string|number} data.matt_adjustment
  */
 export async function addExpense(data) {
+  await requireAuth();
   const paidBy = data.paid_by;
   const amount = parseFloat(data.amount);
   const description = data.description || "";
@@ -135,6 +137,7 @@ export async function addExpense(data) {
  * @param {string|number} data.matt_adjustment
  */
 export async function updateExpense(id, data) {
+  await requireAuth();
   const paidBy = data.paid_by;
   const amount = parseFloat(data.amount);
   const description = data.description || "";
@@ -176,6 +179,7 @@ export async function updateExpense(id, data) {
  * @param {number} id - Expense ID.
  */
 export async function deleteExpense(id) {
+  await requireAuth();
   await ensureSchema();
   await sql`DELETE FROM expenses WHERE id = ${id}`;
   revalidatePath("/misc/split-cost");
