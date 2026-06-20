@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 
 const SESSION_EMOJIS = {
@@ -13,6 +14,11 @@ const SESSION_EMOJIS = {
 const PARTICLE_COUNT = 50;
 const AUTO_DISMISS_MS = 3600;
 
+/**
+ * Builds a randomized list of emoji particles for the given session type.
+ * @param {string} sid - The session ID (e.g. "upperA", "lowerB").
+ * @return {Array<Object>} Array of particle descriptors.
+ */
 function buildParticles(sid) {
   const emojis = SESSION_EMOJIS[sid] ?? ["🎉", "✨", "🔥"];
   return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
@@ -26,6 +32,12 @@ function buildParticles(sid) {
   }));
 }
 
+/**
+ * Renders an emoji confetti overlay that auto-dismisses after a short delay.
+ * Emojis are chosen based on the session type (upper/lower body).
+ * @param {{sid: string, onDone: Function}} props
+ * @return {React.ReactElement} The rendered overlay.
+ */
 export default function WorkoutCelebration({ sid, onDone }) {
   const particles = useRef(buildParticles(sid)).current;
 
@@ -44,7 +56,9 @@ export default function WorkoutCelebration({ sid, onDone }) {
         <span
           key={p.id}
           className={
-            p.clockwise ? styles.celebrationEmojiCw : styles.celebrationEmojiCcw
+            p.clockwise
+              ? styles.celebrationEmojiCw
+              : styles.celebrationEmojiCcw
           }
           style={{
             left: `${p.left}%`,
@@ -59,3 +73,8 @@ export default function WorkoutCelebration({ sid, onDone }) {
     </div>
   );
 }
+
+WorkoutCelebration.propTypes = {
+  sid: PropTypes.string.isRequired,
+  onDone: PropTypes.func.isRequired,
+};

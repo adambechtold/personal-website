@@ -403,7 +403,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   }
 
   // Trigger celebration on the first render where pct reaches 100.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!isWorkout) return;
     const key = `${week}-${sid}`;
