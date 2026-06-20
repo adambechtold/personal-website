@@ -1,6 +1,6 @@
 import React from "react";
 import LiftPlan from "./LiftPlan";
-import { loadLogs } from "./actions";
+import { loadLogs, loadRunLogs } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,9 @@ export const metadata = {
  * @return {Promise<React.ReactElement>} The rendered page.
  */
 export default async function LiftPage() {
-  const initialLogs = await loadLogs();
-  return <LiftPlan initialLogs={initialLogs} />;
+  const [initialLogs, initialRunLogs] = await Promise.all([
+    loadLogs(),
+    loadRunLogs(),
+  ]);
+  return <LiftPlan initialLogs={initialLogs} initialRunLogs={initialRunLogs} />;
 }
