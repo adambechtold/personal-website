@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./split-cost.module.css";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
 import { addExpense, updateExpense, deleteExpense } from "./actions";
 import { computePortions, computeSettlement } from "./calc";
 
@@ -175,12 +177,11 @@ export default function TripTracker({ initialExpenses }) {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {/* Header */}
         <h1 className={styles.title}>🇮🇪 Ireland Trip</h1>
 
         {/* Settlement Summary */}
         <div className={styles.section}>
-          <div className={styles.settlement}>
+          <Card accent className={styles.settlement}>
             <div className={styles.settlementLine}>{settlementLine}</div>
             <div className={styles.settlementBreakdown}>
               <div
@@ -218,7 +219,7 @@ export default function TripTracker({ initialExpenses }) {
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Add Expense Form */}
@@ -226,13 +227,14 @@ export default function TripTracker({ initialExpenses }) {
           <h2 className={styles.sectionTitle}>Add Expense</h2>
           <form onSubmit={handleAdd} className={styles.expenseForm}>
             <ExpenseFields form={form} setForm={setForm} styles={styles} />
-            <button
-              className={styles.submitBtn}
+            <Button
+              variant="primary"
               type="submit"
               disabled={pending}
+              className={styles.submitBtn}
             >
               {pending ? "Saving…" : "Add Expense"}
-            </button>
+            </Button>
           </form>
         </div>
 
@@ -242,39 +244,37 @@ export default function TripTracker({ initialExpenses }) {
             <h2 className={styles.sectionTitle}>
               Expenses ({visibleExpenses.length})
             </h2>
-            <div className={styles.personSelector}>
+            <div className={styles.pillRow}>
               {[
                 ["all", "All"],
                 ["adam", "Adam"],
                 ["matt", "Matt"],
               ].map(([value, label]) => (
-                <button
+                <Button
                   key={value}
                   type="button"
-                  className={`${styles.personBtn} ${
-                    filterUser === value ? styles.personBtnActive : ""
-                  }`}
+                  variant="pill"
+                  active={filterUser === value}
                   onClick={() => setFilterUser(value)}
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
           <div className={styles.listControls}>
-            <div className={styles.personSelector}>
+            <div className={styles.pillRow}>
               {[
                 ["date_added", "Date Added"],
                 ["expense_date", "Expense Date"],
               ].map(([field, label]) => {
                 const active = sort.field === field;
                 return (
-                  <button
+                  <Button
                     key={field}
                     type="button"
-                    className={`${styles.personBtn} ${
-                      active ? styles.personBtnActive : ""
-                    }`}
+                    variant="pill"
+                    active={active}
                     onClick={() =>
                       setSort(
                         active
@@ -284,7 +284,7 @@ export default function TripTracker({ initialExpenses }) {
                     }
                   >
                     {label} {active ? (sort.dir === "desc" ? "↓" : "↑") : ""}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -299,7 +299,7 @@ export default function TripTracker({ initialExpenses }) {
             const isUSD = currency === "USD";
             const isEditing = editId === exp.id;
             return (
-              <div key={exp.id} className={styles.expenseCard}>
+              <Card key={exp.id} className={styles.expenseCard}>
                 {isEditing ? (
                   <form onSubmit={handleUpdate} className={styles.expenseForm}>
                     <ExpenseFields
@@ -308,20 +308,21 @@ export default function TripTracker({ initialExpenses }) {
                       styles={styles}
                     />
                     <div className={styles.editActions}>
-                      <button
-                        className={styles.submitBtn}
+                      <Button
+                        variant="primary"
                         type="submit"
                         disabled={pending}
+                        className={styles.submitBtn}
                       >
                         {pending ? "Saving…" : "Save"}
-                      </button>
-                      <button
-                        className={styles.cancelBtn}
+                      </Button>
+                      <Button
+                        variant="outlined"
                         type="button"
                         onClick={() => setEditId(null)}
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 ) : (
@@ -356,20 +357,23 @@ export default function TripTracker({ initialExpenses }) {
                         )}
                       </div>
                       <div className={styles.expenseActions}>
-                        <button
-                          className={styles.editBtn}
+                        <Button
+                          variant="outlined"
+                          size="sm"
                           onClick={() => startEdit(exp)}
                           disabled={pending}
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="sm"
                           className={styles.deleteBtn}
                           onClick={() => handleDelete(exp.id)}
                           disabled={pending}
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
                     <div className={styles.expensePortions}>
@@ -382,7 +386,7 @@ export default function TripTracker({ initialExpenses }) {
                     </div>
                   </>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -397,7 +401,7 @@ TripTracker.propTypes = {
 
 /**
  * Shared form fields used for both add and edit expense forms.
- * @param {{form: Object, setForm: Function, person: string, styles: Object}} props
+ * @param {{form: Object, setForm: Function, styles: Object}} props
  * @return {React.ReactElement}
  */
 function ExpenseFields({ form, setForm, styles }) {
@@ -407,7 +411,7 @@ function ExpenseFields({ form, setForm, styles }) {
       <div className={styles.formRow}>
         <label className={styles.label}>Amount ({currency})</label>
         <input
-          className={styles.totalInput}
+          className={styles.input}
           type="number"
           min="0.01"
           step="0.01"
@@ -425,25 +429,24 @@ function ExpenseFields({ form, setForm, styles }) {
       </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Currency</label>
-        <div className={styles.personSelector}>
+        <div className={styles.pillRow}>
           {CURRENCIES.map((c) => (
-            <button
+            <Button
               key={c}
               type="button"
-              className={`${styles.personBtn} ${
-                currency === c ? styles.personBtnActive : ""
-              }`}
+              variant="pill"
+              active={currency === c}
               onClick={() => setForm({ ...form, currency: c })}
             >
               {CURRENCY_FLAGS[c]} {c}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Description</label>
         <input
-          className={styles.totalInput}
+          className={styles.input}
           type="text"
           placeholder="e.g. Dinner"
           value={form.description}
@@ -453,28 +456,27 @@ function ExpenseFields({ form, setForm, styles }) {
       </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Paid by</label>
-        <div className={styles.personSelector}>
+        <div className={styles.pillRow}>
           {["adam", "matt"].map((p) => (
-            <button
+            <Button
               key={p}
               type="button"
-              className={`${styles.personBtn} ${
-                form.paid_by === p ? styles.personBtnActive : ""
-              }`}
+              variant="pill"
+              active={form.paid_by === p}
               onClick={() => {
                 setForm({ ...form, paid_by: p });
                 localStorage.setItem("trip-person", p);
               }}
             >
               {p === "adam" ? "Adam" : "Matt"}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
       <div className={styles.formRow}>
         <label className={styles.label}>Date</label>
         <input
-          className={styles.dateInput}
+          className={styles.input}
           type="date"
           value={form.expense_date}
           onChange={(e) => setForm({ ...form, expense_date: e.target.value })}
@@ -482,14 +484,12 @@ function ExpenseFields({ form, setForm, styles }) {
         />
       </div>
       <div className={styles.sharesGrid}>
-        {/* header */}
         <div />
         <div className={styles.sharesColHeader}>Adam</div>
         <div className={styles.sharesColHeader}>Matt</div>
-        {/* shares row */}
         <div className={styles.sharesRowLabel}>Shares</div>
         <input
-          className={styles.sharesInput}
+          className={`${styles.input} ${styles.inputSm}`}
           type="number"
           min="0"
           step="1"
@@ -497,17 +497,16 @@ function ExpenseFields({ form, setForm, styles }) {
           onChange={(e) => setForm({ ...form, adam_shares: e.target.value })}
         />
         <input
-          className={styles.sharesInput}
+          className={`${styles.input} ${styles.inputSm}`}
           type="number"
           min="0"
           step="1"
           value={form.matt_shares}
           onChange={(e) => setForm({ ...form, matt_shares: e.target.value })}
         />
-        {/* adjustment row */}
         <div className={styles.sharesRowLabel}>+/-</div>
         <input
-          className={styles.adjustmentInput}
+          className={`${styles.input} ${styles.inputSm}`}
           type="number"
           step="0.01"
           placeholder="0"
@@ -517,7 +516,7 @@ function ExpenseFields({ form, setForm, styles }) {
           }
         />
         <input
-          className={styles.adjustmentInput}
+          className={`${styles.input} ${styles.inputSm}`}
           type="number"
           step="0.01"
           placeholder="0"
@@ -526,7 +525,6 @@ function ExpenseFields({ form, setForm, styles }) {
             setForm({ ...form, matt_adjustment: e.target.value })
           }
         />
-        {/* cost preview row */}
         {(() => {
           const { adamPortion: aCost, mattPortion: mCost } =
             computePortions(form);

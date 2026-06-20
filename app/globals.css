@@ -1,10 +1,26 @@
 :root {
   --max-width: 1100px;
   --mobile-width: 920px;
-
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
-  --accent-color: #3c84f7;
+
+  /* Design tokens — change here to restyle the whole site */
+  --accent: #3c84f7;
+  --accent-soft: #f7f9ff;
+  --accent-border: #dce8ff;
+  --ink: #1a1a1a;
+  --muted: #888;
+  --faint: #aaa;
+  --positive: #1a7f3c;
+  --negative: #c0392b;
+  --border: #eee;
+  --border-input: #ccc;
+  --radius-card: 8px;
+  --radius-input: 6px;
+  --radius-pill: 20px;
+
+  /* Legacy alias so existing pages keep working */
+  --accent-color: var(--accent);
 }
 
 html,

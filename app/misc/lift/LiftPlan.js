@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import styles from "./lift.module.css";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
 import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
 import { buildLogs } from "./logs";
 import { saveCells, saveRunLog } from "./actions";
@@ -431,26 +433,29 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
           <div>
             <div className={styles.eyebrow}>Summer Block</div>
             <div className={styles.weekStepper}>
-              <button
+              <Button
+                variant="outlined"
                 className={styles.squareBtn}
                 onClick={() => setWeek((w) => clamp(w - 1))}
                 aria-label="Previous week"
               >
                 ‹
-              </button>
+              </Button>
               <div className={styles.weekStr}>
                 Week {week} <span className={styles.weekOf}>of 6</span>
               </div>
-              <button
+              <Button
+                variant="outlined"
                 className={styles.squareBtn}
                 onClick={() => setWeek((w) => clamp(w + 1))}
                 aria-label="Next week"
               >
                 ›
-              </button>
+              </Button>
             </div>
           </div>
-          <button
+          <Button
+            variant="outlined"
             className={styles.infoBtn}
             onClick={() => setNotesOpen(true)}
             aria-label="How to run it"
@@ -468,7 +473,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
               <path d="M12 11v5" />
               <path d="M12 7.4v.01" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {week === 6 && (
@@ -529,7 +534,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
 
             <div className={styles.exList}>
               {exercises.map((ex) => (
-                <div key={ex.idx} className={styles.exCard}>
+                <Card key={ex.idx} className={styles.exCard}>
                   <button
                     className={styles.exHeader}
                     onClick={() => toggleExpand(ex.idx)}
@@ -565,7 +570,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                         height="14"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#aeb6c2"
+                        stroke="#aaa"
                         strokeWidth="2.4"
                         strokeLinecap="round"
                         className={styles.chev}
@@ -655,7 +660,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                                 height="16"
                                 viewBox="0 0 24 24"
                                 fill="none"
-                                stroke="#ffffff"
+                                stroke="#fff"
                                 strokeWidth="3"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -668,7 +673,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                       ))}
                     </div>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -677,7 +682,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
         {/* State B — run / off day */}
         {!isWorkout && (
           <div className={styles.restWrap}>
-            <div
+            <Card
               className={`${styles.restCard} ${
                 sid === "run" && runEntry.done ? styles.restCardDone : ""
               }`}
@@ -688,10 +693,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                   height="22"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#3c84f7"
+                  stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  style={{ color: "var(--accent)" }}
                 >
                   <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
                 </svg>
@@ -744,14 +750,14 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         )}
       </div>
 
       {/* Rest timer — sticky bottom bar */}
       {timer && (
-        <div className={styles.timer}>
+        <Card className={styles.timer}>
           <svg
             width="46"
             height="46"
@@ -771,7 +777,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
               cy="23"
               r="18"
               fill="none"
-              stroke="#3c84f7"
+              stroke="var(--accent)"
               strokeWidth="3.5"
               strokeLinecap="round"
               strokeDasharray="113.1"
@@ -783,21 +789,24 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             <div className={styles.timerLabel}>{timerLabel}</div>
             <div className={styles.timerTime}>{timerTime}</div>
           </div>
-          <button
+          <Button
+            variant="outlined"
             className={styles.timerCtrl}
             onClick={togglePause}
             aria-label={timer.paused ? "Resume" : "Pause"}
           >
             {timer.paused ? "▶" : "❚❚"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outlined"
             className={styles.timerCtrl}
             onClick={addTime}
             aria-label="Add 30 seconds"
           >
             +30
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             className={styles.timerDismiss}
             onClick={() => setTimer(null)}
             aria-label="Dismiss timer"
@@ -807,22 +816,22 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
               height="16"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#ffffff"
+              stroke="#fff"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
               <path d="M5 12l5 5L20 6" />
             </svg>
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {/* Overlay 1 — weight dialog */}
       {weightEditor && isWorkout && (
         <div className={styles.modalWrap}>
           <div className={styles.scrim} onClick={() => setWeightEditor(null)} />
-          <div className={styles.weightDialog}>
+          <Card className={styles.weightDialog}>
             <div className={styles.weightEyebrow}>{weightLabel}</div>
             <div className={styles.weightBigRow}>
               <input
@@ -836,36 +845,39 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             </div>
             <div className={styles.chipRow}>
               {decA.map((v) => (
-                <button
+                <Button
                   key={v}
+                  variant="outlined"
                   className={styles.chipMinus}
                   onClick={() => weightAdjust(-v)}
                 >
                   −{v}
-                </button>
+                </Button>
               ))}
             </div>
             <div className={styles.chipRow}>
               {incA.map((v) => (
-                <button
+                <Button
                   key={v}
+                  variant="accent"
                   className={styles.chipPlus}
                   onClick={() => weightAdjust(v)}
                 >
                   +{v}
-                </button>
+                </Button>
               ))}
             </div>
             <div className={styles.weightHelp}>
-              Applies here and to the sets below that aren’t done yet.
+              Applies here and to the sets below that aren&apos;t done yet.
             </div>
-            <button
+            <Button
+              variant="primary"
               className={styles.weightDone}
               onClick={() => setWeightEditor(null)}
             >
               Done
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       )}
 
@@ -879,13 +891,14 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             </div>
             <div className={styles.sheetHeader}>
               <h2 className={styles.sheetTitle}>How to run it</h2>
-              <button
+              <Button
+                variant="outlined"
                 className={styles.sheetClose}
                 onClick={() => setNotesOpen(false)}
                 aria-label="Close"
               >
                 ✕
-              </button>
+              </Button>
             </div>
             {NOTES.map((note) => (
               <div key={note.h} className={styles.note}>
