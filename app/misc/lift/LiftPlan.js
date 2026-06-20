@@ -812,8 +812,8 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             aria-label="Dismiss timer"
           >
             <svg
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="#fff"
