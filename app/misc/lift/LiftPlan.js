@@ -757,6 +757,14 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                       {runEntry.done ? "Done" : "Mark done"}
                     </button>
                   </div>
+                  <a
+                    href="https://onthegomap.com/#/create"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.runMapLink}
+                  >
+                    Plan your route
+                  </a>
                 </div>
               )}
             </Card>
