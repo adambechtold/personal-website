@@ -465,11 +465,11 @@ export default function LiftPlan({ initialLogs }) {
             const isToday = i === todayIdx;
             const quiet = w.s === "run" || w.s === "off";
             return (
-              <Button
+              <button
                 key={i}
-                variant="pill"
-                active={active}
-                className={styles.dayChip}
+                className={`${styles.dayChip} ${
+                  active ? styles.dayChipActive : ""
+                }`}
                 onClick={() => selectDay(i)}
               >
                 <span className={styles.dayName}>{w.d}</span>
@@ -485,7 +485,7 @@ export default function LiftPlan({ initialLogs }) {
                     isToday && !active ? styles.dayDotToday : ""
                   }`}
                 />
-              </Button>
+              </button>
             );
           })}
         </div>

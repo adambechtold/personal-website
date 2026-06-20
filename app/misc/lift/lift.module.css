@@ -40,17 +40,19 @@
   margin-top: 0.5rem;
 }
 
-/* squareBtn / infoBtn — visual from Button; these add dimensions only */
+/* squareBtn / infoBtn — visual from Button; padding:0 keeps box-sizing clean */
 .squareBtn {
   width: 26px;
   height: 26px;
+  padding: 0;
+  font-size: 16px;
 }
 
 .infoBtn {
   width: 38px;
   height: 38px;
+  padding: 0;
   color: var(--accent);
-  border-color: var(--border-input);
 }
 
 .weekStr {
@@ -91,13 +93,24 @@
   display: none;
 }
 
-/* dayChip — visual from Button pill; these add column layout + dimensions */
+/* dayChip — too specialized for shared Button (column layout, fixed width) */
 .dayChip {
   flex: none;
   width: 46px;
-  flex-direction: column;
-  gap: 5px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-input);
+  background: none;
   padding: 9px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.dayChipActive {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .dayName {
