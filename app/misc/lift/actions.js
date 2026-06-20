@@ -1,10 +1,14 @@
 "use server";
 
 import { sql } from "@vercel/postgres";
-import { SESSIONS } from "./data";
+import { SESSIONS, WEEK } from "./data";
+import { requireAuth } from "../../lib/auth";
 
 const VALID_SESSIONS = new Set(Object.keys(SESSIONS));
 const PROGRAM_WEEKS = 6;
+const RUN_DAY_INDICES = new Set(
+  WEEK.map((d, i) => (d.s === "run" ? i : -1)).filter((i) => i !== -1)
+);
 
 /**
  * Creates the set-log table if it doesn't exist. Each row is one logged set,
@@ -33,6 +37,7 @@ export async function ensureSchema() {
  * @return {Promise<Array>} The saved rows (only cells that have been written).
  */
 export async function loadLogs() {
+  await requireAuth();
   await ensureSchema();
   const { rows } = await sql`
     SELECT week, session_type, exercise_idx, set_idx, weight, reps, done
@@ -70,12 +75,70 @@ function normalizeCell(c) {
 }
 
 /**
+ * Creates the run-log table if it doesn't exist. Each row is one logged run,
+ * keyed by (week, day_idx) to distinguish Wednesday and Saturday runs within
+ * the same program week.
+ */
+async function ensureRunSchema() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS lift_run_log (
+      week       INTEGER     NOT NULL,
+      day_idx    INTEGER     NOT NULL,
+      distance   TEXT        NOT NULL DEFAULT '',
+      done       BOOLEAN     NOT NULL DEFAULT false,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (week, day_idx)
+    )
+  `;
+}
+
+/**
+ * Loads every saved run log.
+ * @return {Promise<Array>} The saved rows.
+ */
+export async function loadRunLogs() {
+  await requireAuth();
+  await ensureRunSchema();
+  const { rows } = await sql`
+    SELECT week, day_idx, distance, done
+    FROM lift_run_log
+  `;
+  return rows;
+}
+
+/**
+ * Upserts a run log entry for a specific week and day.
+ * @param {number} week - Program week (1–PROGRAM_WEEKS).
+ * @param {number} dayIdx - Day index (0–6, Mon–Sun).
+ * @param {string} distance - Distance run (stored as text).
+ * @param {boolean} done - Whether the run is marked complete.
+ */
+export async function saveRunLog(week, dayIdx, distance, done) {
+  await requireAuth();
+  const w = parseInt(week, 10);
+  const d = parseInt(dayIdx, 10);
+  if (!Number.isInteger(w) || w < 1 || w > PROGRAM_WEEKS) return;
+  if (!RUN_DAY_INDICES.has(d)) return;
+  await ensureRunSchema();
+  await sql`
+    INSERT INTO lift_run_log (week, day_idx, distance, done, updated_at)
+    VALUES (${w}, ${d}, ${String(distance)}, ${!!done}, now())
+    ON CONFLICT (week, day_idx)
+    DO UPDATE SET
+      distance = EXCLUDED.distance,
+      done = EXCLUDED.done,
+      updated_at = now()
+  `;
+}
+
+/**
  * Upserts a batch of set cells. Used for both single edits and the weight
  * cascade (which touches several sets at once).
  * @param {Array} cells - Cell descriptors
  *   ({ week, session_type, exercise_idx, set_idx, weight, reps, done }).
  */
 export async function saveCells(cells) {
+  await requireAuth();
   if (!Array.isArray(cells) || cells.length === 0) return;
   await ensureSchema();
   for (const raw of cells) {

@@ -497,6 +497,86 @@
   color: var(--ink);
 }
 
+/* ── Run logger ─────────────────────────────────────────────────── */
+
+.restCardDone {
+  border-color: rgba(60, 132, 247, 0.6);
+  background: rgba(60, 132, 247, 0.03);
+}
+
+.runLogger {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.runLoggerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.runDistanceField {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  padding: 0 14px;
+  height: 48px;
+}
+
+.runDistanceInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.runDistanceInput::placeholder {
+  color: #b3bcc9;
+  font-weight: 500;
+}
+
+.runDistanceUnit {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  flex: none;
+}
+
+.runDoneBtn {
+  height: 48px;
+  padding: 0 18px;
+  border-radius: var(--radius-input);
+  background: var(--accent-soft);
+  border: 1px solid var(--border-input);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.runDoneBtnChecked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
 /* ── Rest timer ─────────────────────────────────────────────────── */
 
 /* timer — visual from Card; position, sizing, and shadow here */

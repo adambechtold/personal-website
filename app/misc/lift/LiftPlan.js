@@ -7,10 +7,27 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
 import { buildLogs } from "./logs";
-import { saveCells } from "./actions";
+import { saveCells, saveRunLog } from "./actions";
 
 // Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
 const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
+
+/**
+ * Builds the run logs map from saved database rows.
+ * @param {Array} rows - Rows from lift_run_log.
+ * @return {Object} Run logs keyed by week, then day index.
+ */
+function buildRunLogs(rows = []) {
+  const out = {};
+  for (const row of rows) {
+    if (!out[row.week]) out[row.week] = {};
+    out[row.week][row.day_idx] = {
+      distance: row.distance ?? "",
+      done: !!row.done,
+    };
+  }
+  return out;
+}
 
 // Program week 1 begins the Monday of the week of 2026-06-18 (Thu).
 const PROGRAM_START = new Date(2026, 5, 15);
@@ -70,13 +87,14 @@ function isValidTimer(timer) {
  * @param {{initialLogs: Array}} props - Saved set rows from the database.
  * @return {React.ReactElement} The rendered logger.
  */
-export default function LiftPlan({ initialLogs }) {
+export default function LiftPlan({ initialLogs, initialRunLogs }) {
   const todayIdx = useMemo(() => DAY_MAP[new Date().getDay()], []);
 
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
   const [week, setWeek] = useState(currentWeek);
   const [expanded, setExpanded] = useState(0);
   const [logs, setLogs] = useState(() => buildLogs(initialLogs));
+  const [runLogs, setRunLogs] = useState(() => buildRunLogs(initialRunLogs));
   const [timer, setTimer] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
@@ -264,6 +282,20 @@ export default function LiftPlan({ initialLogs }) {
   }
 
   /**
+   * Updates the run log for the current week and selected day and persists it.
+   * @param {string} distance - The distance value.
+   * @param {boolean} done - Whether the run is complete.
+   */
+  function commitRun(distance, done) {
+    setRunLogs((prev) => {
+      const next = { ...prev };
+      next[week] = { ...next[week], [selectedIdx]: { distance, done } };
+      return next;
+    });
+    saveRunLog(week, selectedIdx, distance, done).catch(() => {});
+  }
+
+  /**
    * Applies a unit-aware increment chip to the open weight editor.
    * @param {number} delta - The amount to add (may be negative).
    */
@@ -322,9 +354,6 @@ export default function LiftPlan({ initialLogs }) {
   let pct = 0;
   let restTitle = "";
   let restNote = "";
-  let hasNext = false;
-  let nextIdx = 0;
-  let nextName = "";
 
   if (isWorkout) {
     const sess = SESSIONS[sid];
@@ -359,24 +388,20 @@ export default function LiftPlan({ initialLogs }) {
     pct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
   } else {
     if (sid === "run") {
-      restTitle = "Run / Off";
+      restTitle = "Run";
       restNote =
-        "Easy aerobic miles, or take the day fully off. If you run the morning before a lower day, keep it easy — legs come first.";
+        "Easy aerobic miles. If you run the morning before a lower day, keep it easy — legs come first.";
     } else {
       restTitle = "Rest Day";
       restNote =
         "Full rest. The work you put in this week turns into muscle now. Eat, sleep, repeat.";
     }
-    for (let k = 1; k <= 7; k++) {
-      const j = (selectedIdx + k) % 7;
-      if (WEEK[j].s !== "run" && WEEK[j].s !== "off") {
-        hasNext = true;
-        nextIdx = j;
-        nextName = SESSIONS[WEEK[j].s].title + " · " + SESSIONS[WEEK[j].s].lean;
-        break;
-      }
-    }
   }
+
+  const runEntry = runLogs[week]?.[selectedIdx] ?? {
+    distance: "",
+    done: false,
+  };
 
   const C = 113.1;
   let timerOffset = 0;
@@ -657,7 +682,11 @@ export default function LiftPlan({ initialLogs }) {
         {/* State B — run / off day */}
         {!isWorkout && (
           <div className={styles.restWrap}>
-            <Card className={styles.restCard}>
+            <Card
+              className={`${styles.restCard} ${
+                sid === "run" && runEntry.done ? styles.restCardDone : ""
+              }`}
+            >
               <div className={styles.restIcon}>
                 <svg
                   width="22"
@@ -675,31 +704,53 @@ export default function LiftPlan({ initialLogs }) {
               </div>
               <h1 className={styles.restTitle}>{restTitle}</h1>
               <p className={styles.restNote}>{restNote}</p>
-            </Card>
-            {hasNext && (
-              <Button
-                variant="outlined"
-                className={styles.nextCard}
-                onClick={() => selectDay(nextIdx)}
-              >
-                <div>
-                  <div className={styles.nextEyebrow}>Next session</div>
-                  <div className={styles.nextName}>{nextName}</div>
+
+              {sid === "run" && (
+                <div className={styles.runLogger}>
+                  <div className={styles.runLoggerRow}>
+                    <div className={styles.runDistanceField}>
+                      <input
+                        className={styles.runDistanceInput}
+                        value={runEntry.distance}
+                        inputMode="decimal"
+                        placeholder="0.0"
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, "");
+                          const dot = raw.indexOf(".");
+                          const v = dot === -1 ? raw : raw.slice(0, dot + 3);
+                          commitRun(v, runEntry.done);
+                        }}
+                      />
+                      <span className={styles.runDistanceUnit}>mi</span>
+                    </div>
+                    <button
+                      className={`${styles.runDoneBtn} ${
+                        runEntry.done ? styles.runDoneBtnChecked : ""
+                      }`}
+                      onClick={() =>
+                        commitRun(runEntry.distance, !runEntry.done)
+                      }
+                    >
+                      {runEntry.done && (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M5 12l5 5L20 6" />
+                        </svg>
+                      )}
+                      {runEntry.done ? "Done" : "Mark done"}
+                    </button>
+                  </div>
                 </div>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  style={{ color: "var(--accent)" }}
-                >
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
-              </Button>
-            )}
+              )}
+            </Card>
           </div>
         )}
       </div>
@@ -864,8 +915,10 @@ export default function LiftPlan({ initialLogs }) {
 
 LiftPlan.propTypes = {
   initialLogs: PropTypes.array,
+  initialRunLogs: PropTypes.array,
 };
 
 LiftPlan.defaultProps = {
   initialLogs: [],
+  initialRunLogs: [],
 };
