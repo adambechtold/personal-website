@@ -4,92 +4,40 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import { SESSIONS, WEEK, ABBR, NOTES, CONFIG, PROGRAM_WEEKS } from "./data";
+import { SESSIONS, WEEK, CONFIG } from "./data";
 import { buildLogs } from "./logs";
 import { saveCells, saveRunLog } from "./actions";
 import WorkoutCelebration from "./WorkoutCelebration";
-
-// Date.getDay() is 0=Sun..6=Sat; map to Mon=0..Sun=6 to index WEEK.
-const DAY_MAP = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
-
-/**
- * Builds the run logs map from saved database rows.
- * @param {Array} rows - Rows from lift_run_log.
- * @return {Object} Run logs keyed by week, then day index.
- */
-function buildRunLogs(rows = []) {
-  const out = {};
-  for (const row of rows) {
-    if (!out[row.week]) out[row.week] = {};
-    out[row.week][row.day_idx] = {
-      distance: row.distance ?? "",
-      done: !!row.done,
-    };
-  }
-  return out;
-}
-
-// Program week 1 begins the Monday of the week of 2026-06-18 (Thu).
-const PROGRAM_START = new Date(2026, 5, 15);
-
-/**
- * Derives the current program week (1–PROGRAM_WEEKS) from today's date,
- * clamped to the block's bounds.
- * @return {number} The current week number.
- */
-function currentWeek() {
-  const ms = Date.now() - PROGRAM_START.getTime();
-  const w = Math.floor(ms / (7 * 24 * 60 * 60 * 1000)) + 1;
-  return Math.min(PROGRAM_WEEKS, Math.max(1, w));
-}
-
-/**
- * Formats a second count as M:SS.
- * @param {number} s - Seconds remaining.
- * @return {string} The formatted time.
- */
-function fmt(s) {
-  const m = Math.floor(s / 60);
-  return m + ":" + String(s % 60).padStart(2, "0");
-}
-
-// localStorage key for the active rest timer (survives reloads / tab discards).
-const TIMER_KEY = "lift-timer";
-
-/**
- * @param {Object|null} timer - Running timers carry endsAt; paused ones carry
- *   remaining, so the value is correct across sleep, throttling, and reloads.
- * @param {number} now - Wall-clock time in ms.
- * @return {number} Whole seconds left, floored at 0.
- */
-function getRemainingTimerDurationSeconds(timer, now) {
-  if (!timer) return 0;
-  if (timer.paused) return Math.max(0, timer.remaining);
-  return Math.max(0, Math.ceil((timer.endsAt - now) / 1000));
-}
-
-/**
- * @param {*} timer - A timer restored from storage.
- * @return {boolean} Whether it is well-formed enough to resume.
- */
-function isValidTimer(timer) {
-  if (!timer || typeof timer !== "object") return false;
-  if (!Number.isFinite(timer.total)) return false;
-  if (typeof timer.label !== "string") return false;
-  if (typeof timer.paused !== "boolean") return false;
-  return Number.isFinite(timer.paused ? timer.remaining : timer.endsAt);
-}
+import {
+  TIMER_KEY,
+  getRemainingTimerDurationSeconds,
+  isValidTimer,
+} from "./lib/timer";
+import {
+  buildRunLogs,
+  clampWeek,
+  currentWeek,
+  todayIndex,
+} from "./lib/schedule";
+import { deriveSessionView, restDayCopy } from "./lib/sessionView";
+import DayStrip from "./components/DayStrip";
+import ExerciseCard from "./components/ExerciseCard";
+import RestDayCard from "./components/RestDayCard";
+import RestTimer from "./components/RestTimer";
+import WeightEditor from "./components/WeightEditor";
+import NotesSheet from "./components/NotesSheet";
 
 /**
  * Summer Lifting Plan — a phone-first logger for a 4-day Upper/Lower block.
  * Logged sets persist to Postgres, scoped per week, so reloading resumes
- * where you left off.
- * @param {{initialLogs: Array}} props - Saved set rows from the database.
+ * where you left off. State and persistence live here; rendering is delegated
+ * to the day strip, exercise cards, rest-day card, and the timer/editor/notes
+ * overlays.
+ * @param {{initialLogs: Array, initialRunLogs: Array}} props - Saved rows.
  * @return {React.ReactElement} The rendered logger.
  */
 export default function LiftPlan({ initialLogs, initialRunLogs }) {
-  const todayIdx = useMemo(() => DAY_MAP[new Date().getDay()], []);
+  const todayIdx = useMemo(() => todayIndex(), []);
 
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
   const [week, setWeek] = useState(currentWeek);
@@ -349,58 +297,19 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   }
 
   // ── Derived view data ──────────────────────────────────────────────
-  const clamp = (w) => Math.min(PROGRAM_WEEKS, Math.max(1, w));
-
-  let title = "";
-  let lean = "";
-  let meta = "";
-  let exercises = [];
-  let pct = 0;
-  let restTitle = "";
-  let restNote = "";
-
-  if (isWorkout) {
-    const sess = SESSIONS[sid];
-    const log = logs[week][sid];
-    let totalSets = 0;
-    let doneSets = 0;
-    let estSec = 0;
-    exercises = sess.ex.map((e, i) => {
-      const dc = log[i].sets.filter((s) => s.done).length;
-      totalSets += e.sets;
-      doneSets += dc;
-      estSec += e.sets * (40 + (e.t === "c" ? restCompound : restIso));
-      const complete = dc === e.sets;
-      return {
-        idx: i,
-        name: e.n,
-        sub: e.sub,
-        target: e.sets + " × " + e.lo + "–" + e.hi,
-        rest: e.t === "c" ? "2–3 min" : "60–90 sec",
-        open: expanded === i,
-        progress: dc + "/" + e.sets,
-        complete,
-        ph: e.lo + "–" + e.hi,
-        sets: log[i].sets,
-      };
-    });
-    title = sess.title;
-    lean = sess.lean;
-    const estMin = Math.max(5, Math.round(estSec / 60 / 5) * 5);
-    meta =
-      sess.ex.length + " lifts · " + totalSets + " sets · ~" + estMin + " min";
-    pct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
-  } else {
-    if (sid === "run") {
-      restTitle = "Run";
-      restNote =
-        "Easy aerobic miles. If you run the morning before a lower day, keep it easy — legs come first.";
-    } else {
-      restTitle = "Rest Day";
-      restNote =
-        "Full rest. The work you put in this week turns into muscle now. Eat, sleep, repeat.";
-    }
-  }
+  const view = isWorkout
+    ? deriveSessionView({
+        sess: SESSIONS[sid],
+        log: logs[week][sid],
+        expanded,
+        restCompound,
+        restIso,
+      })
+    : null;
+  const { restTitle, restNote } = isWorkout
+    ? { restTitle: "", restNote: "" }
+    : restDayCopy(sid);
+  const pct = view ? view.pct : 0;
 
   // Trigger celebration on the first render where pct reaches 100.
   useEffect(() => {
@@ -424,18 +333,6 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
     done: false,
   };
 
-  const C = 113.1;
-  let timerOffset = 0;
-  let timerTime = "";
-  let timerLabel = "";
-  if (timer) {
-    const remaining = getRemainingTimerDurationSeconds(timer, now);
-    const frac = timer.total ? remaining / timer.total : 0;
-    timerOffset = (C * (1 - frac)).toFixed(1);
-    timerTime = fmt(remaining);
-    timerLabel = remaining === 0 ? "Rest complete" : timer.label;
-  }
-
   let weightLabel = "";
   let weightVal = "";
   if (weightEditor && isWorkout) {
@@ -457,7 +354,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
               <Button
                 variant="outlined"
                 className={styles.squareBtn}
-                onClick={() => setWeek((w) => clamp(w - 1))}
+                onClick={() => setWeek((w) => clampWeek(w - 1))}
                 aria-label="Previous week"
               >
                 ‹
@@ -468,7 +365,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
               <Button
                 variant="outlined"
                 className={styles.squareBtn}
-                onClick={() => setWeek((w) => clamp(w + 1))}
+                onClick={() => setWeek((w) => clampWeek(w + 1))}
                 aria-label="Next week"
               >
                 ›
@@ -492,47 +389,21 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
           </div>
         )}
 
-        {/* Day strip */}
-        <div className={styles.dayStrip}>
-          {WEEK.map((w, i) => {
-            const active = i === selectedIdx;
-            const isToday = i === todayIdx;
-            const quiet = w.s === "run" || w.s === "off";
-            return (
-              <button
-                key={i}
-                className={`${styles.dayChip} ${
-                  active ? styles.dayChipActive : ""
-                }`}
-                onClick={() => selectDay(i)}
-              >
-                <span className={styles.dayName}>{w.d}</span>
-                <span
-                  className={`${styles.dayLab} ${
-                    quiet ? styles.dayLabQuiet : ""
-                  }`}
-                >
-                  {ABBR[w.s]}
-                </span>
-                <span
-                  className={`${styles.dayDot} ${
-                    isToday && !active ? styles.dayDotToday : ""
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
+        <DayStrip
+          selectedIdx={selectedIdx}
+          todayIdx={todayIdx}
+          onSelect={selectDay}
+        />
 
         {/* State A — workout session */}
         {isWorkout && (
           <div>
             <div className={styles.sessionHeader}>
               <div className={styles.sessionTitleRow}>
-                <h1 className={styles.sessionTitle}>{title}</h1>
-                <span className={styles.sessionLean}>{lean}</span>
+                <h1 className={styles.sessionTitle}>{view.title}</h1>
+                <span className={styles.sessionLean}>{view.lean}</span>
               </div>
-              <div className={styles.sessionMeta}>{meta}</div>
+              <div className={styles.sessionMeta}>{view.meta}</div>
               <div className={styles.progressTrack}>
                 <div
                   className={styles.progressFill}
@@ -542,147 +413,17 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
             </div>
 
             <div className={styles.exList}>
-              {exercises.map((ex) => (
-                <Card key={ex.idx} className={styles.exCard}>
-                  <button
-                    className={styles.exHeader}
-                    onClick={() => toggleExpand(ex.idx)}
-                  >
-                    <div
-                      className={`${styles.exBadge} ${
-                        ex.complete ? styles.exBadgeDone : ""
-                      }`}
-                    >
-                      {ex.complete ? "✓" : ex.idx + 1}
-                    </div>
-                    <div className={styles.exInfo}>
-                      <div className={styles.exName}>
-                        {ex.name}
-                        {ex.sub && (
-                          <span className={styles.exSub}> {ex.sub}</span>
-                        )}
-                      </div>
-                      <div className={styles.exTarget}>
-                        {ex.target} · rest {ex.rest}
-                      </div>
-                    </div>
-                    <div className={styles.exRight}>
-                      <span
-                        className={`${styles.exProgress} ${
-                          ex.complete ? styles.exProgressDone : ""
-                        }`}
-                      >
-                        {ex.progress}
-                      </span>
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#aaa"
-                        strokeWidth="2.4"
-                        strokeLinecap="round"
-                        className={styles.chev}
-                        style={{
-                          transform: ex.open
-                            ? "rotate(180deg)"
-                            : "rotate(0deg)",
-                        }}
-                      >
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
-                    </div>
-                  </button>
-
-                  {ex.open && (
-                    <div className={styles.exBody}>
-                      <div className={styles.setColHead}>
-                        <span className={styles.colSet}>Set</span>
-                        <span className={styles.colWeight}>
-                          Weight · {unit}
-                        </span>
-                        <span className={styles.colReps}>Reps</span>
-                        <span className={styles.colDone}>Done</span>
-                      </div>
-                      {ex.sets.map((s, j) => (
-                        <div
-                          key={j}
-                          className={`${styles.setRow} ${
-                            s.done ? styles.setRowDone : ""
-                          }`}
-                        >
-                          <div className={styles.colSet}>{j + 1}</div>
-                          <button
-                            className={styles.weightField}
-                            onClick={() =>
-                              setWeightEditor({ ex: ex.idx, set: j })
-                            }
-                          >
-                            <span
-                              className={`${styles.weightVal} ${
-                                s.weight === "" ? styles.weightEmpty : ""
-                              } ${
-                                s.isRolledForward ? styles.rolledForward : ""
-                              }`}
-                            >
-                              {s.weight === "" ? "—" : s.weight}
-                            </span>
-                            <span className={styles.weightUnit}>{unit}</span>
-                          </button>
-                          <div className={styles.repsField}>
-                            <button
-                              className={styles.repsBtn}
-                              onClick={() => stepReps(ex.idx, j, -1)}
-                              aria-label="Decrease reps"
-                            >
-                              −
-                            </button>
-                            <input
-                              className={`${styles.repsInput} ${
-                                s.isRolledForward ? styles.rolledForward : ""
-                              }`}
-                              value={s.reps}
-                              inputMode="numeric"
-                              placeholder={ex.ph}
-                              onChange={(e) =>
-                                inputReps(ex.idx, j, e.target.value)
-                              }
-                            />
-                            <button
-                              className={styles.repsBtn}
-                              onClick={() => stepReps(ex.idx, j, 1)}
-                              aria-label="Increase reps"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <button
-                            className={`${styles.doneBox} ${
-                              s.done ? styles.doneBoxChecked : ""
-                            }`}
-                            onClick={() => toggleDone(ex.idx, j)}
-                            aria-label="Toggle set done"
-                          >
-                            {s.done && (
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#fff"
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M5 12l5 5L20 6" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
+              {view.exercises.map((ex) => (
+                <ExerciseCard
+                  key={ex.idx}
+                  ex={ex}
+                  unit={unit}
+                  onToggleExpand={toggleExpand}
+                  onOpenWeight={setWeightEditor}
+                  onStepReps={stepReps}
+                  onInputReps={inputReps}
+                  onToggleDone={toggleDone}
+                />
               ))}
             </div>
           </div>
@@ -690,214 +431,42 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
 
         {/* State B — run / off day */}
         {!isWorkout && (
-          <div className={styles.restWrap}>
-            <Card
-              className={`${styles.restCard} ${
-                sid === "run" && runEntry.done ? styles.restCardDone : ""
-              }`}
-            >
-              <div className={styles.restIcon}>
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ color: "var(--accent)" }}
-                >
-                  <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
-                </svg>
-              </div>
-              <h1 className={styles.restTitle}>{restTitle}</h1>
-              <p className={styles.restNote}>{restNote}</p>
-
-              {sid === "run" && (
-                <div className={styles.runLogger}>
-                  <div className={styles.runLoggerRow}>
-                    <div className={styles.runDistanceField}>
-                      <input
-                        className={styles.runDistanceInput}
-                        value={runEntry.distance}
-                        inputMode="decimal"
-                        placeholder="0.0"
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/[^0-9.]/g, "");
-                          const dot = raw.indexOf(".");
-                          const v = dot === -1 ? raw : raw.slice(0, dot + 3);
-                          commitRun(v, runEntry.done);
-                        }}
-                      />
-                      <span className={styles.runDistanceUnit}>mi</span>
-                    </div>
-                    <button
-                      className={`${styles.runDoneBtn} ${
-                        runEntry.done ? styles.runDoneBtnChecked : ""
-                      }`}
-                      onClick={() =>
-                        commitRun(runEntry.distance, !runEntry.done)
-                      }
-                    >
-                      {runEntry.done && (
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M5 12l5 5L20 6" />
-                        </svg>
-                      )}
-                      {runEntry.done ? "Done" : "Mark done"}
-                    </button>
-                  </div>
-                  <a
-                    href="https://onthegomap.com/#/create"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.runMapLink}
-                  >
-                    Plan your route
-                  </a>
-                </div>
-              )}
-            </Card>
-          </div>
+          <RestDayCard
+            sid={sid}
+            restTitle={restTitle}
+            restNote={restNote}
+            runEntry={runEntry}
+            onCommitRun={commitRun}
+          />
         )}
       </div>
 
       {/* Rest timer — sticky bottom bar */}
       {timer && (
-        <Card className={styles.timer}>
-          <svg
-            width="46"
-            height="46"
-            viewBox="0 0 46 46"
-            className={styles.ring}
-          >
-            <circle
-              cx="23"
-              cy="23"
-              r="18"
-              fill="none"
-              stroke="#e9edf3"
-              strokeWidth="3.5"
-            />
-            <circle
-              cx="23"
-              cy="23"
-              r="18"
-              fill="none"
-              stroke="var(--accent)"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              strokeDasharray="113.1"
-              strokeDashoffset={timerOffset}
-              transform="rotate(-90 23 23)"
-            />
-          </svg>
-          <div className={styles.timerInfo}>
-            <div className={styles.timerLabel}>{timerLabel}</div>
-            <div className={styles.timerTime}>{timerTime}</div>
-          </div>
-          <Button
-            variant="outlined"
-            className={styles.timerCtrl}
-            onClick={togglePause}
-            aria-label={timer.paused ? "Resume" : "Pause"}
-          >
-            {timer.paused ? "▶" : "❚❚"}
-          </Button>
-          <Button
-            variant="outlined"
-            className={styles.timerCtrl}
-            onClick={addTime}
-            aria-label="Add 30 seconds"
-          >
-            +30
-          </Button>
-          <button
-            className={`${styles.doneBox} ${styles.doneBoxChecked}`}
-            onClick={() => setTimer(null)}
-            aria-label="Dismiss timer"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12l5 5L20 6" />
-            </svg>
-          </button>
-        </Card>
+        <RestTimer
+          timer={timer}
+          now={now}
+          onTogglePause={togglePause}
+          onAddTime={addTime}
+          onDismiss={() => setTimer(null)}
+        />
       )}
 
       {/* Overlay 1 — weight dialog */}
       {weightEditor && isWorkout && (
-        <div className={styles.modalWrap}>
-          <div className={styles.scrim} onClick={() => setWeightEditor(null)} />
-          <Card className={styles.weightDialog}>
-            <div className={styles.weightEyebrow}>{weightLabel}</div>
-            <div className={styles.weightBigRow}>
-              <input
-                className={styles.weightBig}
-                value={weightVal}
-                inputMode="decimal"
-                placeholder="0"
-                onChange={(e) => weightType(e.target.value)}
-              />
-              <span className={styles.weightBigUnit}>{unit}</span>
-            </div>
-            <div className={styles.chipRow}>
-              {decA.map((v) => (
-                <Button
-                  key={v}
-                  variant="outlined"
-                  className={styles.chipMinus}
-                  onClick={() => weightAdjust(-v)}
-                >
-                  −{v}
-                </Button>
-              ))}
-            </div>
-            <div className={styles.chipRow}>
-              {incA.map((v) => (
-                <Button
-                  key={v}
-                  variant="accent"
-                  className={styles.chipPlus}
-                  onClick={() => weightAdjust(v)}
-                >
-                  +{v}
-                </Button>
-              ))}
-            </div>
-            <div className={styles.weightHelp}>
-              Applies here and to the sets below that aren&apos;t done yet.
-            </div>
-            <Button
-              variant="primary"
-              className={styles.weightDone}
-              onClick={() => setWeightEditor(null)}
-            >
-              Done
-            </Button>
-          </Card>
-        </div>
+        <WeightEditor
+          label={weightLabel}
+          value={weightVal}
+          unit={unit}
+          incA={incA}
+          decA={decA}
+          onAdjust={weightAdjust}
+          onType={weightType}
+          onClose={() => setWeightEditor(null)}
+        />
       )}
 
-      {/* Overlay 2 — "How to run it" bottom sheet */}
+      {/* Overlay 2 — session-complete celebration */}
       {celebrateSid && (
         <WorkoutCelebration
           sid={celebrateSid}
@@ -905,33 +474,8 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
         />
       )}
 
-      {notesOpen && (
-        <div className={styles.sheetWrap}>
-          <div className={styles.scrim} onClick={() => setNotesOpen(false)} />
-          <div className={styles.sheet}>
-            <div className={styles.grabWrap}>
-              <div className={styles.grab} />
-            </div>
-            <div className={styles.sheetHeader}>
-              <h2 className={styles.sheetTitle}>How to run it</h2>
-              <Button
-                variant="outlined"
-                className={styles.sheetClose}
-                onClick={() => setNotesOpen(false)}
-                aria-label="Close"
-              >
-                ✕
-              </Button>
-            </div>
-            {NOTES.map((note) => (
-              <div key={note.h} className={styles.note}>
-                <div className={styles.noteHead}>{note.h}</div>
-                <div className={styles.noteBody}>{note.t}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Overlay 3 — "How to run it" bottom sheet */}
+      {notesOpen && <NotesSheet onClose={() => setNotesOpen(false)} />}
     </div>
   );
 }
