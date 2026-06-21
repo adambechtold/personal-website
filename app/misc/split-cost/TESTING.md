@@ -83,7 +83,6 @@ the top of the test file: `// @vitest-environment jsdom`. Do not add a second co
 
 ## Out of scope (fine to be wrong for now)
 
-- `CostSplitter.js` — dead/placeholder, not wired into the route.
 - Auth / per-user identity; `paid_by` is a hardcoded two-person enum on purpose.
 - Visual/UX: styling, flags/emoji, date formatting, settlement wording, the
   `localStorage` "remember last payer" convenience.
