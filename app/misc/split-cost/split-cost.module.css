@@ -17,12 +17,6 @@
   margin-bottom: 1.5rem;
 }
 
-.subtitle {
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin: -1rem 0 1.5rem;
-}
-
 /* ── Form labels & inputs ───────────────────────────────────────── */
 
 .label {
@@ -284,75 +278,4 @@
 .pillRow {
   display: flex;
   gap: 0.4rem;
-}
-
-/* ── Result rows (CostSplitter) ─────────────────────────────────── */
-
-.totalSection {
-  margin-bottom: 1.5rem;
-}
-
-.peopleHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.peopleTitle {
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.personRow {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.nameInput {
-  flex: 1;
-}
-
-.removeButton {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0 0.3rem;
-  line-height: 1;
-}
-
-.removeButton:hover {
-  color: #e33;
-}
-
-.results {
-  margin-top: 1.5rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-}
-
-.resultsTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-}
-
-.resultRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-  font-size: 0.95rem;
-}
-
-.resultName {
-  color: #333;
-}
-
-.resultAmount {
-  font-weight: 600;
-  color: var(--accent);
 }
