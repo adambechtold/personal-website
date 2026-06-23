@@ -103,6 +103,9 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   const day = WEEK[selectedIdx];
   const sid = day.s;
   const isWorkout = sid !== "run" && sid !== "off";
+  const sessEx = isWorkout
+    ? [...SESSIONS[sid].ex, ...(SESSIONS[sid].appendix || [])]
+    : [];
 
   /**
    * Selects a day in the strip and collapses any expanded exercise.
@@ -168,7 +171,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
    */
   function stepReps(ex, set, delta) {
     const cur0 = logs[week][sid][ex].sets[set];
-    const lo = SESSIONS[sid].ex[ex].lo;
+    const lo = sessEx[ex].lo;
     let cur = parseFloat(cur0.reps);
     if (isNaN(cur)) cur = lo - delta;
     let nv = cur + delta;
@@ -200,10 +203,10 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
     const cur0 = logs[week][sid][ex].sets[set];
     const was = cur0.done;
     const cell = { ...cur0, done: !was, isRolledForward: false };
-    if (!was && cell.reps === "") cell.reps = String(SESSIONS[sid].ex[ex].lo);
+    if (!was && cell.reps === "") cell.reps = String(sessEx[ex].lo);
     commit([{ ex, set, cell }]);
     if (!was && CONFIG.autoTimer) {
-      const type = SESSIONS[sid].ex[ex].t;
+      const type = sessEx[ex].t;
       const sec = type === "c" ? restCompound : restIso;
       startTimer(sec, type === "c" ? "Compound rest" : "Isolation rest");
     }
@@ -337,7 +340,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   let weightVal = "";
   if (weightEditor && isWorkout) {
     weightLabel =
-      SESSIONS[sid].ex[weightEditor.ex].n + " · Set " + (weightEditor.set + 1);
+      sessEx[weightEditor.ex].n + " · Set " + (weightEditor.set + 1);
     weightVal = logs[week][sid][weightEditor.ex].sets[weightEditor.set].weight;
   }
   const incA = unit === "kg" ? [1.25, 2.5, 5, 10] : [2.5, 5, 10, 25];
@@ -414,16 +417,20 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
 
             <div className={styles.exList}>
               {view.exercises.map((ex) => (
-                <ExerciseCard
-                  key={ex.idx}
-                  ex={ex}
-                  unit={unit}
-                  onToggleExpand={toggleExpand}
-                  onOpenWeight={setWeightEditor}
-                  onStepReps={stepReps}
-                  onInputReps={inputReps}
-                  onToggleDone={toggleDone}
-                />
+                <React.Fragment key={ex.idx}>
+                  {ex.idx === view.appendixStart && (
+                    <div className={styles.appendixDivider}>Abs</div>
+                  )}
+                  <ExerciseCard
+                    ex={ex}
+                    unit={unit}
+                    onToggleExpand={toggleExpand}
+                    onOpenWeight={setWeightEditor}
+                    onStepReps={stepReps}
+                    onInputReps={inputReps}
+                    onToggleDone={toggleDone}
+                  />
+                </React.Fragment>
               ))}
             </div>
           </div>

@@ -16,7 +16,9 @@ function createEmptyLogs() {
   for (let week = 1; week <= PROGRAM_WEEKS; week++) {
     logs[week] = {};
     for (const sessionId of Object.keys(SESSIONS)) {
-      logs[week][sessionId] = SESSIONS[sessionId].ex.map((exercise) => ({
+      const sess = SESSIONS[sessionId];
+      const allEx = [...sess.ex, ...(sess.appendix || [])];
+      logs[week][sessionId] = allEx.map((exercise) => ({
         sets: Array.from({ length: exercise.sets }, createEmptySet),
       }));
     }

@@ -23,6 +23,11 @@ export const SESSIONS = {
       { n: "Triceps Pushdown", sub: "", sets: 3, lo: 10, hi: 15, t: "i" },
       { n: "Cable Curl", sub: "DB or cable", sets: 3, lo: 10, hi: 15, t: "i" },
     ],
+    appendix: [
+      { n: "Cable Crunch", sub: "", sets: 3, lo: 10, hi: 15, t: "i" },
+      { n: "Hanging Leg Raise", sub: "", sets: 3, lo: 8, hi: 12, t: "i" },
+      { n: "Ab Wheel", sub: "", sets: 3, lo: 8, hi: 12, t: "i" },
+    ],
   },
   lowerA: {
     title: "Lower A",
@@ -69,6 +74,11 @@ export const SESSIONS = {
       },
       { n: "Hammer Curl", sub: "", sets: 3, lo: 10, hi: 15, t: "i" },
       { n: "Overhead Triceps Ext", sub: "", sets: 3, lo: 10, hi: 15, t: "i" },
+    ],
+    appendix: [
+      { n: "Weighted Decline Sit-up", sub: "", sets: 3, lo: 8, hi: 15, t: "i" },
+      { n: "Pallof Press", sub: "per side", sets: 3, lo: 10, hi: 15, t: "i" },
+      { n: "Weighted Plank", sub: "seconds", sets: 3, lo: 30, hi: 60, t: "i" },
     ],
   },
   lowerB: {
