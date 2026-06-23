@@ -126,4 +126,51 @@ describe("rolling sets forward", () => {
       isRolledForward: false,
     });
   });
+
+  // Lateral Raise is exercise index 4 in both upperA (Mon) and upperB (Thu).
+  const LAT = 4;
+
+  it("inherits an exercise done on another day from its last occurrence", () => {
+    const logs = buildLogs([
+      row({
+        week: 1,
+        session_type: "upperA",
+        exercise_idx: LAT,
+        weight: "25",
+        reps: "15",
+      }),
+    ]);
+    // Same week, later day: upperB's Lateral Raise inherits from upperA's,
+    // rather than waiting a full week for the next upperB.
+    expect(logs[1].upperB[LAT].sets[SET]).toMatchObject({
+      weight: "25",
+      reps: "15",
+      isRolledForward: true,
+    });
+  });
+
+  it("rolls forward from the most recent day the exercise was performed", () => {
+    const logs = buildLogs([
+      row({
+        week: 1,
+        session_type: "upperA",
+        exercise_idx: LAT,
+        weight: "25",
+        reps: "15",
+      }),
+      row({
+        week: 1,
+        session_type: "upperB",
+        exercise_idx: LAT,
+        weight: "30",
+        reps: "12",
+      }),
+    ]);
+    // Week 2 upperA inherits from week 1 upperB (the latest), not week 1 upperA.
+    expect(logs[2].upperA[LAT].sets[SET]).toMatchObject({
+      weight: "30",
+      reps: "12",
+      isRolledForward: true,
+    });
+  });
 });
