@@ -37,7 +37,7 @@ export default function ExerciseCard({
             ex.complete ? styles.exBadgeDone : ""
           }`}
         >
-          {ex.complete ? "✓" : ex.idx + 1}
+          {ex.complete ? <Check size={16} stroke="#fff" /> : ex.idx + 1}
         </div>
         <div className={styles.exInfo}>
           <div className={styles.exName}>
