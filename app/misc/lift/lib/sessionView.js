@@ -9,6 +9,7 @@
  * @param {number|null} args.expanded - Index of the open exercise, if any.
  * @param {number} args.restCompound - Compound rest seconds (for time estimate).
  * @param {number} args.restIso - Isolation rest seconds (for time estimate).
+ * @param {Object} [args.overrides] - Map of exercise index to override name.
  * @return {{exercises: Array, title: string, lean: string, meta: string,
  *   pct: number}} The workout view model.
  */
@@ -18,6 +19,7 @@ export function deriveSessionView({
   expanded,
   restCompound,
   restIso,
+  overrides = {},
 }) {
   const mainCount = sess.ex.length;
   const allEx = [...sess.ex, ...(sess.appendix || [])];
@@ -30,9 +32,14 @@ export function deriveSessionView({
     doneSets += dc;
     estSec += e.sets * (40 + (e.t === "c" ? restCompound : restIso));
     const complete = dc === e.sets;
+    const override = overrides[i] ?? "";
+    const hasOverride = override.trim() !== "";
     return {
       idx: i,
-      name: e.n,
+      name: hasOverride ? override : e.n,
+      baseName: e.n,
+      override,
+      originalName: hasOverride ? e.n : null,
       sub: e.sub,
       target: e.sets + " × " + e.lo + "–" + e.hi,
       rest: e.t === "c" ? "2–3 min" : "60–90 sec",

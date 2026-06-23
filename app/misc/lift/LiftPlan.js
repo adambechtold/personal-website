@@ -5,8 +5,8 @@ import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 import Button from "../../components/ui/Button";
 import { SESSIONS, WEEK, CONFIG } from "./data";
-import { buildLogs } from "./logs";
-import { saveCells, saveRunLog } from "./actions";
+import { buildLogs, buildOverrides } from "./logs";
+import { saveCells, saveRunLog, saveOverride } from "./actions";
 import WorkoutCelebration from "./WorkoutCelebration";
 import {
   TIMER_KEY,
@@ -33,10 +33,15 @@ import NotesSheet from "./components/NotesSheet";
  * where you left off. State and persistence live here; rendering is delegated
  * to the day strip, exercise cards, rest-day card, and the timer/editor/notes
  * overlays.
- * @param {{initialLogs: Array, initialRunLogs: Array}} props - Saved rows.
+ * @param {{initialLogs: Array, initialRunLogs: Array,
+ *   initialOverrides: Array}} props - Saved rows.
  * @return {React.ReactElement} The rendered logger.
  */
-export default function LiftPlan({ initialLogs, initialRunLogs }) {
+export default function LiftPlan({
+  initialLogs,
+  initialRunLogs,
+  initialOverrides,
+}) {
   const todayIdx = useMemo(() => todayIndex(), []);
 
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
@@ -44,6 +49,9 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   const [expanded, setExpanded] = useState(0);
   const [logs, setLogs] = useState(() => buildLogs(initialLogs));
   const [runLogs, setRunLogs] = useState(() => buildRunLogs(initialRunLogs));
+  const [overrides, setOverrides] = useState(() =>
+    buildOverrides(initialOverrides)
+  );
   const [timer, setTimer] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
@@ -251,6 +259,24 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   }
 
   /**
+   * Sets or clears an exercise's display-name override for the current week and
+   * session, persisting it. An empty name clears the override, reverting the
+   * exercise to its canonical name.
+   * @param {number} ex - The exercise index.
+   * @param {string} name - The override name, or "" to clear it.
+   */
+  function renameExercise(ex, name) {
+    setOverrides((prev) => {
+      const next = structuredClone(prev);
+      const bucket = next[week][sid];
+      if (name.trim() === "") delete bucket[ex];
+      else bucket[ex] = name;
+      return next;
+    });
+    saveOverride(week, sid, ex, name).catch(() => {});
+  }
+
+  /**
    * Applies a unit-aware increment chip to the open weight editor.
    * @param {number} delta - The amount to add (may be negative).
    */
@@ -307,6 +333,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
         expanded,
         restCompound,
         restIso,
+        overrides: overrides[week][sid],
       })
     : null;
   const { restTitle, restNote } = isWorkout
@@ -339,8 +366,12 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   let weightLabel = "";
   let weightVal = "";
   if (weightEditor && isWorkout) {
-    weightLabel =
-      sessEx[weightEditor.ex].n + " · Set " + (weightEditor.set + 1);
+    const override = overrides[week][sid][weightEditor.ex];
+    const exName =
+      override && override.trim() !== ""
+        ? override.trim()
+        : sessEx[weightEditor.ex].n;
+    weightLabel = exName + " · Set " + (weightEditor.set + 1);
     weightVal = logs[week][sid][weightEditor.ex].sets[weightEditor.set].weight;
   }
   const incA = unit === "kg" ? [1.25, 2.5, 5, 10] : [2.5, 5, 10, 25];
@@ -429,6 +460,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
                     onStepReps={stepReps}
                     onInputReps={inputReps}
                     onToggleDone={toggleDone}
+                    onRenameExercise={renameExercise}
                   />
                 </React.Fragment>
               ))}
@@ -490,9 +522,11 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
 LiftPlan.propTypes = {
   initialLogs: PropTypes.array,
   initialRunLogs: PropTypes.array,
+  initialOverrides: PropTypes.array,
 };
 
 LiftPlan.defaultProps = {
   initialLogs: [],
   initialRunLogs: [],
+  initialOverrides: [],
 };

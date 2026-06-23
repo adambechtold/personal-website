@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import styles from "../lift.module.css";
 import Card from "../../../components/ui/Card";
@@ -6,7 +6,8 @@ import Check from "./Check";
 
 /**
  * A single collapsible exercise: header with progress, and (when open) the
- * editable set rows for weight, reps, and done.
+ * editable set rows for weight, reps, and done. The name can be renamed via the
+ * pencil button, which reveals a confirm-or-cancel input next to it.
  * @param {Object} props
  * @param {Object} props.ex - The exercise view model from deriveSessionView.
  * @param {string} props.unit - Weight unit label.
@@ -15,6 +16,7 @@ import Check from "./Check";
  * @param {Function} props.onStepReps - (ex, set, delta) => void.
  * @param {Function} props.onInputReps - (ex, set, value) => void.
  * @param {Function} props.onToggleDone - (ex, set) => void.
+ * @param {Function} props.onRenameExercise - (idx, name) => void.
  * @return {React.ReactElement}
  */
 export default function ExerciseCard({
@@ -25,12 +27,66 @@ export default function ExerciseCard({
   onStepReps,
   onInputReps,
   onToggleDone,
+  onRenameExercise,
 }) {
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
+
+  /**
+   * Opens the name editor seeded with the current override, without toggling
+   * the card's expanded state.
+   * @param {React.MouseEvent} e - The click event.
+   */
+  function startEditName(e) {
+    e.stopPropagation();
+    setDraftName(ex.override);
+    setEditingName(true);
+  }
+
+  /** Commits the draft name (empty clears the override) and closes the editor. */
+  function confirmName() {
+    onRenameExercise(ex.idx, draftName);
+    setEditingName(false);
+  }
+
+  /** Closes the editor without saving. */
+  function cancelName() {
+    setEditingName(false);
+  }
+
+  /**
+   * Confirms on Enter, cancels on Escape, while typing a name.
+   * @param {React.KeyboardEvent} e - The key event.
+   */
+  function onNameKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      confirmName();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelName();
+    }
+  }
+
+  /**
+   * Toggles the card on Enter/Space when the header has keyboard focus.
+   * @param {React.KeyboardEvent} e - The key event.
+   */
+  function onHeaderKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onToggleExpand(ex.idx);
+    }
+  }
+
   return (
     <Card className={styles.exCard}>
-      <button
+      <div
         className={styles.exHeader}
+        role="button"
+        tabIndex={0}
         onClick={() => onToggleExpand(ex.idx)}
+        onKeyDown={onHeaderKeyDown}
       >
         <div
           className={`${styles.exBadge} ${
@@ -43,7 +99,30 @@ export default function ExerciseCard({
           <div className={styles.exName}>
             {ex.name}
             {ex.sub && <span className={styles.exSub}> {ex.sub}</span>}
+            <button
+              type="button"
+              className={styles.editNameBtn}
+              onClick={startEditName}
+              aria-label="Edit exercise name"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+              </svg>
+            </button>
           </div>
+          {ex.originalName && (
+            <div className={styles.exOriginal}>{ex.originalName}</div>
+          )}
           <div className={styles.exTarget}>
             {ex.target} · rest {ex.rest}
           </div>
@@ -72,7 +151,37 @@ export default function ExerciseCard({
             <path d="M6 9l6 6 6-6" />
           </svg>
         </div>
-      </button>
+      </div>
+
+      {editingName && (
+        <div className={styles.nameEditRow}>
+          <input
+            className={styles.nameEditInput}
+            value={draftName}
+            placeholder={ex.baseName}
+            aria-label="Override exercise name"
+            autoFocus
+            onChange={(e) => setDraftName(e.target.value)}
+            onKeyDown={onNameKeyDown}
+          />
+          <button
+            type="button"
+            className={styles.nameConfirmBtn}
+            onClick={confirmName}
+            aria-label="Save name"
+          >
+            <Check size={16} stroke="#fff" />
+          </button>
+          <button
+            type="button"
+            className={styles.nameCancelBtn}
+            onClick={cancelName}
+            aria-label="Cancel"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {ex.open && (
         <div className={styles.exBody}>
@@ -151,4 +260,5 @@ ExerciseCard.propTypes = {
   onStepReps: PropTypes.func.isRequired,
   onInputReps: PropTypes.func.isRequired,
   onToggleDone: PropTypes.func.isRequired,
+  onRenameExercise: PropTypes.func.isRequired,
 };

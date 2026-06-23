@@ -75,6 +75,77 @@ function normalizeCell(c) {
 }
 
 /**
+ * Creates the exercise-override table if it doesn't exist. Each row renames one
+ * exercise for a given week + session, keyed by (week, session_type,
+ * exercise_idx). A missing row means the exercise shows its canonical name.
+ */
+export async function ensureOverrideSchema() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS lift_exercise_override (
+      week         INTEGER     NOT NULL,
+      session_type TEXT        NOT NULL,
+      exercise_idx INTEGER     NOT NULL,
+      name         TEXT        NOT NULL DEFAULT '',
+      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (week, session_type, exercise_idx)
+    )
+  `;
+}
+
+/**
+ * Loads every saved exercise-name override.
+ * @return {Promise<Array>} The saved rows (only exercises that were renamed).
+ */
+export async function loadOverrides() {
+  await requireAuth();
+  await ensureOverrideSchema();
+  const { rows } = await sql`
+    SELECT week, session_type, exercise_idx, name
+    FROM lift_exercise_override
+  `;
+  return rows;
+}
+
+/**
+ * Upserts an exercise-name override. An empty (or whitespace-only) name clears
+ * the override by deleting the row, so the exercise reverts to its canonical
+ * name as if it was never renamed.
+ * @param {number} week - Program week (1–PROGRAM_WEEKS).
+ * @param {string} sessionType - The session id.
+ * @param {number} exerciseIdx - The exercise index (main lifts + appendix).
+ * @param {string} name - The override name, or "" to clear it.
+ */
+export async function saveOverride(week, sessionType, exerciseIdx, name) {
+  await requireAuth();
+  const w = parseInt(week, 10);
+  const sessionTypeStr = String(sessionType);
+  const idx = parseInt(exerciseIdx, 10);
+  if (!Number.isInteger(w) || w < 1 || w > PROGRAM_WEEKS) return;
+  if (!VALID_SESSIONS.has(sessionTypeStr)) return;
+  const sess = SESSIONS[sessionTypeStr];
+  const exerciseCount = sess.ex.length + (sess.appendix?.length || 0);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= exerciseCount) return;
+  await ensureOverrideSchema();
+  const trimmed = name == null ? "" : String(name).trim();
+  if (trimmed === "") {
+    await sql`
+      DELETE FROM lift_exercise_override
+      WHERE week = ${w}
+        AND session_type = ${sessionTypeStr}
+        AND exercise_idx = ${idx}
+    `;
+    return;
+  }
+  await sql`
+    INSERT INTO lift_exercise_override
+      (week, session_type, exercise_idx, name, updated_at)
+    VALUES (${w}, ${sessionTypeStr}, ${idx}, ${trimmed}, now())
+    ON CONFLICT (week, session_type, exercise_idx)
+    DO UPDATE SET name = EXCLUDED.name, updated_at = now()
+  `;
+}
+
+/**
  * Creates the run-log table if it doesn't exist. Each row is one logged run,
  * keyed by (week, day_idx) to distinguish Wednesday and Saturday runs within
  * the same program week.
