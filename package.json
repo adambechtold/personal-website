@@ -10,9 +10,10 @@
     "test:unit": "vitest run",
     "prepare": "husky install",
     "check-format": "prettier --check .",
-    "check-lint": "eslint . --ext .js,.jsx",
+    "check-lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "check-types": "tsc --noEmit",
     "format": "prettier --write .",
-    "test": "npm run check-format && npm run check-lint && npm run build"
+    "test": "npm run check-format && npm run check-lint && npm run check-types && npm run build"
   },
   "dependencies": {
     "@vercel/analytics": "^1.0.2",
@@ -25,12 +26,18 @@
     "sharp": "^0.32.5"
   },
   "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.48.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-react": "^7.33.2",
     "husky": "^8.0.0",
     "prettier": "^3.0.2",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.7"
   }
 }

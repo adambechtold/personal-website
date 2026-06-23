@@ -14,6 +14,17 @@ module.exports = {
         sourceType: "script",
       },
     },
+    {
+      files: ["**/*.ts", "**/*.tsx"],
+      parser: "@typescript-eslint/parser",
+      plugins: ["@typescript-eslint"],
+      extends: ["plugin:@typescript-eslint/recommended"],
+      rules: {
+        // JSDoc type annotations are redundant once types are in the signature.
+        "valid-jsdoc": "off",
+        "require-jsdoc": "off",
+      },
+    },
   ],
   parserOptions: {
     ecmaVersion: "latest",
