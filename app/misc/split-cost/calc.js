@@ -20,35 +20,35 @@
  * person, then the remainder is split by shares. Field values may be strings
  * (form input) or numbers (DB rows); both are tolerated.
  *
- * @param {Object} exp - Expense-like object.
- * @param {string|number} exp.amount
- * @param {string|number} exp.adam_shares
- * @param {string|number} exp.matt_shares
- * @param {string|number} exp.adam_adjustment
- * @param {string|number} exp.matt_adjustment
+ * @param {Object} expense - Expense-like object.
+ * @param {string|number} expense.amount
+ * @param {string|number} expense.adam_shares
+ * @param {string|number} expense.matt_shares
+ * @param {string|number} expense.adam_adjustment
+ * @param {string|number} expense.matt_adjustment
  * @return {{adamPortion: number, mattPortion: number}}
  */
-export function computePortions(exp) {
-  const amount = parseFloat(exp.amount) || 0;
-  const adamShares = parseInt(exp.adam_shares) || 0;
-  const mattShares = parseInt(exp.matt_shares) || 0;
-  const adamAdj = parseFloat(exp.adam_adjustment) || 0;
-  const mattAdj = parseFloat(exp.matt_adjustment) || 0;
+export function computePortions(expense) {
+  const amount = parseFloat(expense.amount) || 0;
+  const adamShares = parseInt(expense.adam_shares) || 0;
+  const mattShares = parseInt(expense.matt_shares) || 0;
+  const adamAdjustment = parseFloat(expense.adam_adjustment) || 0;
+  const mattAdjustment = parseFloat(expense.matt_adjustment) || 0;
   const totalShares = adamShares + mattShares;
-  const remaining = amount - adamAdj - mattAdj;
+  const remaining = amount - adamAdjustment - mattAdjustment;
   let adamPortion =
     totalShares > 0
-      ? (adamShares / totalShares) * remaining + adamAdj
-      : adamAdj;
+      ? (adamShares / totalShares) * remaining + adamAdjustment
+      : adamAdjustment;
   let mattPortion =
     totalShares > 0
-      ? (mattShares / totalShares) * remaining + mattAdj
-      : mattAdj;
+      ? (mattShares / totalShares) * remaining + mattAdjustment
+      : mattAdjustment;
   // Floor the non-payer's portion so the payer absorbs any odd cent.
-  if (exp.paid_by === "adam") {
+  if (expense.paid_by === "adam") {
     mattPortion = Math.floor(mattPortion * 100) / 100;
     adamPortion = Math.round((amount - mattPortion) * 100) / 100;
-  } else if (exp.paid_by === "matt") {
+  } else if (expense.paid_by === "matt") {
     adamPortion = Math.floor(adamPortion * 100) / 100;
     mattPortion = Math.round((amount - adamPortion) * 100) / 100;
   }
@@ -72,12 +72,12 @@ export function computeSettlement(expenses) {
   let mattPaid = 0;
   let adamOwed = 0;
   let mattOwed = 0;
-  for (const exp of expenses) {
-    const amount = parseFloat(exp.amount) || 0;
-    const rate = parseFloat(exp.rate_to_base) || 1;
-    if (exp.paid_by === "adam") adamPaid += amount * rate;
+  for (const expense of expenses) {
+    const amount = parseFloat(expense.amount) || 0;
+    const rate = parseFloat(expense.rate_to_base) || 1;
+    if (expense.paid_by === "adam") adamPaid += amount * rate;
     else mattPaid += amount * rate;
-    const { adamPortion, mattPortion } = computePortions(exp);
+    const { adamPortion, mattPortion } = computePortions(expense);
     adamOwed += adamPortion * rate;
     mattOwed += mattPortion * rate;
   }

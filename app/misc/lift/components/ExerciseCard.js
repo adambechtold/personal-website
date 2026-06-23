@@ -9,18 +9,19 @@ import Check from "./Check";
  * editable set rows for weight, reps, and done. The name can be renamed via the
  * pencil button, which reveals a confirm-or-cancel input next to it.
  * @param {Object} props
- * @param {Object} props.ex - The exercise view model from deriveSessionView.
+ * @param {Object} props.exercise - The exercise view model from
+ *   deriveSessionView.
  * @param {string} props.unit - Weight unit label.
- * @param {Function} props.onToggleExpand - (idx) => void.
- * @param {Function} props.onOpenWeight - ({ex, set}) => void.
- * @param {Function} props.onStepReps - (ex, set, delta) => void.
- * @param {Function} props.onInputReps - (ex, set, value) => void.
- * @param {Function} props.onToggleDone - (ex, set) => void.
- * @param {Function} props.onRenameExercise - (idx, name) => void.
+ * @param {Function} props.onToggleExpand - (exerciseIndex) => void.
+ * @param {Function} props.onOpenWeight - ({exerciseIndex, setIndex}) => void.
+ * @param {Function} props.onStepReps - (exerciseIndex, setIndex, delta) => void.
+ * @param {Function} props.onInputReps - (exerciseIndex, setIndex, value) => void.
+ * @param {Function} props.onToggleDone - (exerciseIndex, setIndex) => void.
+ * @param {Function} props.onRenameExercise - (exerciseIndex, name) => void.
  * @return {React.ReactElement}
  */
 export default function ExerciseCard({
-  ex,
+  exercise,
   unit,
   onToggleExpand,
   onOpenWeight,
@@ -35,17 +36,17 @@ export default function ExerciseCard({
   /**
    * Opens the name editor seeded with the current override, without toggling
    * the card's expanded state.
-   * @param {React.MouseEvent} e - The click event.
+   * @param {React.MouseEvent} event - The click event.
    */
-  function startEditName(e) {
-    e.stopPropagation();
-    setDraftName(ex.override);
+  function startEditName(event) {
+    event.stopPropagation();
+    setDraftName(exercise.override);
     setEditingName(true);
   }
 
   /** Commits the draft name (empty clears the override) and closes the editor. */
   function confirmName() {
-    onRenameExercise(ex.idx, draftName);
+    onRenameExercise(exercise.index, draftName);
     setEditingName(false);
   }
 
@@ -56,26 +57,26 @@ export default function ExerciseCard({
 
   /**
    * Confirms on Enter, cancels on Escape, while typing a name.
-   * @param {React.KeyboardEvent} e - The key event.
+   * @param {React.KeyboardEvent} event - The key event.
    */
-  function onNameKeyDown(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
+  function onNameKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
       confirmName();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
       cancelName();
     }
   }
 
   /**
    * Toggles the card on Enter/Space when the header has keyboard focus.
-   * @param {React.KeyboardEvent} e - The key event.
+   * @param {React.KeyboardEvent} event - The key event.
    */
-  function onHeaderKeyDown(e) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onToggleExpand(ex.idx);
+  function onHeaderKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onToggleExpand(exercise.index);
     }
   }
 
@@ -85,20 +86,26 @@ export default function ExerciseCard({
         className={styles.exHeader}
         role="button"
         tabIndex={0}
-        onClick={() => onToggleExpand(ex.idx)}
+        onClick={() => onToggleExpand(exercise.index)}
         onKeyDown={onHeaderKeyDown}
       >
         <div
           className={`${styles.exBadge} ${
-            ex.complete ? styles.exBadgeDone : ""
+            exercise.complete ? styles.exBadgeDone : ""
           }`}
         >
-          {ex.complete ? <Check size={16} stroke="#fff" /> : ex.idx + 1}
+          {exercise.complete ? (
+            <Check size={16} stroke="#fff" />
+          ) : (
+            exercise.index + 1
+          )}
         </div>
         <div className={styles.exInfo}>
           <div className={styles.exName}>
-            {ex.name}
-            {ex.sub && <span className={styles.exSub}> {ex.sub}</span>}
+            {exercise.name}
+            {exercise.subLabel && (
+              <span className={styles.exSub}> {exercise.subLabel}</span>
+            )}
             <button
               type="button"
               className={styles.editNameBtn}
@@ -120,20 +127,20 @@ export default function ExerciseCard({
               </svg>
             </button>
           </div>
-          {ex.originalName && (
-            <div className={styles.exOriginal}>{ex.originalName}</div>
+          {exercise.originalName && (
+            <div className={styles.exOriginal}>{exercise.originalName}</div>
           )}
           <div className={styles.exTarget}>
-            {ex.target} · rest {ex.rest}
+            {exercise.target} · rest {exercise.rest}
           </div>
         </div>
         <div className={styles.exRight}>
           <span
             className={`${styles.exProgress} ${
-              ex.complete ? styles.exProgressDone : ""
+              exercise.complete ? styles.exProgressDone : ""
             }`}
           >
-            {ex.progress}
+            {exercise.progress}
           </span>
           <svg
             width="14"
@@ -145,7 +152,7 @@ export default function ExerciseCard({
             strokeLinecap="round"
             className={styles.chev}
             style={{
-              transform: ex.open ? "rotate(180deg)" : "rotate(0deg)",
+              transform: exercise.open ? "rotate(180deg)" : "rotate(0deg)",
             }}
           >
             <path d="M6 9l6 6 6-6" />
@@ -158,10 +165,10 @@ export default function ExerciseCard({
           <input
             className={styles.nameEditInput}
             value={draftName}
-            placeholder={ex.baseName}
+            placeholder={exercise.baseName}
             aria-label="Override exercise name"
             autoFocus
-            onChange={(e) => setDraftName(e.target.value)}
+            onChange={(event) => setDraftName(event.target.value)}
             onKeyDown={onNameKeyDown}
           />
           <button
@@ -183,7 +190,7 @@ export default function ExerciseCard({
         </div>
       )}
 
-      {ex.open && (
+      {exercise.open && (
         <div className={styles.exBody}>
           <div className={styles.setColHead}>
             <span className={styles.colSet}>Set</span>
@@ -191,45 +198,51 @@ export default function ExerciseCard({
             <span className={styles.colReps}>Reps</span>
             <span className={styles.colDone}>Done</span>
           </div>
-          {ex.sets.map((s, j) => (
+          {exercise.sets.map((set, setIndex) => (
             <div
-              key={j}
-              className={`${styles.setRow} ${s.done ? styles.setRowDone : ""}`}
+              key={setIndex}
+              className={`${styles.setRow} ${
+                set.done ? styles.setRowDone : ""
+              }`}
             >
-              <div className={styles.colSet}>{j + 1}</div>
+              <div className={styles.colSet}>{setIndex + 1}</div>
               <button
                 className={styles.weightField}
-                onClick={() => onOpenWeight({ ex: ex.idx, set: j })}
+                onClick={() =>
+                  onOpenWeight({ exerciseIndex: exercise.index, setIndex })
+                }
               >
                 <span
                   className={`${styles.weightVal} ${
-                    s.weight === "" ? styles.weightEmpty : ""
-                  } ${s.isRolledForward ? styles.rolledForward : ""}`}
+                    set.weight === "" ? styles.weightEmpty : ""
+                  } ${set.isRolledForward ? styles.rolledForward : ""}`}
                 >
-                  {s.weight === "" ? "—" : s.weight}
+                  {set.weight === "" ? "—" : set.weight}
                 </span>
                 <span className={styles.weightUnit}>{unit}</span>
               </button>
               <div className={styles.repsField}>
                 <button
                   className={styles.repsBtn}
-                  onClick={() => onStepReps(ex.idx, j, -1)}
+                  onClick={() => onStepReps(exercise.index, setIndex, -1)}
                   aria-label="Decrease reps"
                 >
                   −
                 </button>
                 <input
                   className={`${styles.repsInput} ${
-                    s.isRolledForward ? styles.rolledForward : ""
+                    set.isRolledForward ? styles.rolledForward : ""
                   }`}
-                  value={s.reps}
+                  value={set.reps}
                   inputMode="numeric"
-                  placeholder={ex.ph}
-                  onChange={(e) => onInputReps(ex.idx, j, e.target.value)}
+                  placeholder={exercise.placeholder}
+                  onChange={(event) =>
+                    onInputReps(exercise.index, setIndex, event.target.value)
+                  }
                 />
                 <button
                   className={styles.repsBtn}
-                  onClick={() => onStepReps(ex.idx, j, 1)}
+                  onClick={() => onStepReps(exercise.index, setIndex, 1)}
                   aria-label="Increase reps"
                 >
                   +
@@ -237,12 +250,12 @@ export default function ExerciseCard({
               </div>
               <button
                 className={`${styles.doneBox} ${
-                  s.done ? styles.doneBoxChecked : ""
+                  set.done ? styles.doneBoxChecked : ""
                 }`}
-                onClick={() => onToggleDone(ex.idx, j)}
+                onClick={() => onToggleDone(exercise.index, setIndex)}
                 aria-label="Toggle set done"
               >
-                {s.done && <Check size={16} stroke="#fff" />}
+                {set.done && <Check size={16} stroke="#fff" />}
               </button>
             </div>
           ))}
@@ -253,7 +266,7 @@ export default function ExerciseCard({
 }
 
 ExerciseCard.propTypes = {
-  ex: PropTypes.object.isRequired,
+  exercise: PropTypes.object.isRequired,
   unit: PropTypes.string.isRequired,
   onToggleExpand: PropTypes.func.isRequired,
   onOpenWeight: PropTypes.func.isRequired,

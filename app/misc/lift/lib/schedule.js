@@ -23,18 +23,18 @@ export function todayIndex() {
  * @return {number} The current week number.
  */
 export function currentWeek() {
-  const ms = Date.now() - PROGRAM_START.getTime();
-  const w = Math.floor(ms / (7 * 24 * 60 * 60 * 1000)) + 1;
-  return Math.min(PROGRAM_WEEKS, Math.max(1, w));
+  const elapsedMs = Date.now() - PROGRAM_START.getTime();
+  const weekNumber = Math.floor(elapsedMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return Math.min(PROGRAM_WEEKS, Math.max(1, weekNumber));
 }
 
 /**
  * Clamps a week number to the block's bounds.
- * @param {number} w - The proposed week.
+ * @param {number} weekNumber - The proposed week.
  * @return {number} The clamped week.
  */
-export function clampWeek(w) {
-  return Math.min(PROGRAM_WEEKS, Math.max(1, w));
+export function clampWeek(weekNumber) {
+  return Math.min(PROGRAM_WEEKS, Math.max(1, weekNumber));
 }
 
 /**
@@ -43,13 +43,13 @@ export function clampWeek(w) {
  * @return {Object} Run logs keyed by week, then day index.
  */
 export function buildRunLogs(rows = []) {
-  const out = {};
+  const runLogs = {};
   for (const row of rows) {
-    if (!out[row.week]) out[row.week] = {};
-    out[row.week][row.day_idx] = {
+    if (!runLogs[row.week]) runLogs[row.week] = {};
+    runLogs[row.week][row.day_idx] = {
       distance: row.distance ?? "",
       done: !!row.done,
     };
   }
-  return out;
+  return runLogs;
 }

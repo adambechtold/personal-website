@@ -19,15 +19,15 @@ export default function LoginForm({ destination }) {
   const [pending, setPending] = useState(false);
 
   /**
-   * @param {React.FormEvent} e - The submit event.
+   * @param {React.FormEvent} event - The submit event.
    */
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function onSubmit(event) {
+    event.preventDefault();
     setPending(true);
     setError("");
-    const res = await login(password);
-    if (res?.error) {
-      setError(res.error);
+    const response = await login(password);
+    if (response?.error) {
+      setError(response.error);
       setPending(false);
       return;
     }
@@ -43,7 +43,7 @@ export default function LoginForm({ destination }) {
         <input
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(event) => setPassword(event.target.value)}
           placeholder="Password"
           autoFocus
           autoComplete="current-password"

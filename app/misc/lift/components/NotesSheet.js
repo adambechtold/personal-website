@@ -29,9 +29,9 @@ export default function NotesSheet({ onClose }) {
           </Button>
         </div>
         {NOTES.map((note) => (
-          <div key={note.h} className={styles.note}>
-            <div className={styles.noteHead}>{note.h}</div>
-            <div className={styles.noteBody}>{note.t}</div>
+          <div key={note.heading} className={styles.note}>
+            <div className={styles.noteHead}>{note.heading}</div>
+            <div className={styles.noteBody}>{note.body}</div>
           </div>
         ))}
       </div>

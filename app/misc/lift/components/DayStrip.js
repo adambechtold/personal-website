@@ -6,29 +6,34 @@ import { WEEK, ABBR } from "../data";
 /**
  * The horizontal Mon–Sun day picker. Highlights the selected day and marks
  * today with a dot on quiet (run/off) labels.
- * @param {{selectedIdx: number, todayIdx: number, onSelect: Function}} props
+ * @param {{selectedDayIndex: number, todayDayIndex: number,
+ *   onSelect: Function}} props
  * @return {React.ReactElement}
  */
-export default function DayStrip({ selectedIdx, todayIdx, onSelect }) {
+export default function DayStrip({
+  selectedDayIndex,
+  todayDayIndex,
+  onSelect,
+}) {
   return (
     <div className={styles.dayStrip}>
-      {WEEK.map((w, i) => {
-        const active = i === selectedIdx;
-        const isToday = i === todayIdx;
-        const quiet = w.s === "run" || w.s === "off";
+      {WEEK.map((day, index) => {
+        const active = index === selectedDayIndex;
+        const isToday = index === todayDayIndex;
+        const quiet = day.session === "run" || day.session === "off";
         return (
           <button
-            key={i}
+            key={index}
             className={`${styles.dayChip} ${
               active ? styles.dayChipActive : ""
             }`}
-            onClick={() => onSelect(i)}
+            onClick={() => onSelect(index)}
           >
-            <span className={styles.dayName}>{w.d}</span>
+            <span className={styles.dayName}>{day.day}</span>
             <span
               className={`${styles.dayLab} ${quiet ? styles.dayLabQuiet : ""}`}
             >
-              {ABBR[w.s]}
+              {ABBR[day.session]}
             </span>
             <span
               className={`${styles.dayDot} ${
@@ -43,7 +48,7 @@ export default function DayStrip({ selectedIdx, todayIdx, onSelect }) {
 }
 
 DayStrip.propTypes = {
-  selectedIdx: PropTypes.number.isRequired,
-  todayIdx: PropTypes.number.isRequired,
+  selectedDayIndex: PropTypes.number.isRequired,
+  todayDayIndex: PropTypes.number.isRequired,
   onSelect: PropTypes.func.isRequired,
 };

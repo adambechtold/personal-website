@@ -9,30 +9,34 @@ const VALID_SESSIONS = new Set(Object.keys(SESSIONS));
  * Validates and normalizes one cell, or returns null if it's out of bounds.
  * The exercise index spans the main lifts followed by the appendix, matching
  * how the rest of the app indexes a session's exercises.
- * @param {Object} c - The raw cell descriptor.
+ * @param {Object} rawCell - The raw cell descriptor (DB-shaped, snake_case).
  * @return {Object|null} The normalized cell, or null to skip it.
  */
-export function normalizeCell(c) {
-  const week = parseInt(c.week, 10);
-  const sessionType = String(c.session_type);
-  const exerciseIdx = parseInt(c.exercise_idx, 10);
-  const setIdx = parseInt(c.set_idx, 10);
+export function normalizeCell(rawCell) {
+  const week = parseInt(rawCell.week, 10);
+  const sessionType = String(rawCell.session_type);
+  const exerciseIndex = parseInt(rawCell.exercise_idx, 10);
+  const setIndex = parseInt(rawCell.set_idx, 10);
   if (!Number.isInteger(week) || week < 1 || week > PROGRAM_WEEKS) return null;
   if (!VALID_SESSIONS.has(sessionType)) return null;
-  const sess = SESSIONS[sessionType];
-  const allEx = [...sess.ex, ...(sess.appendix || [])];
-  const exercise = allEx[exerciseIdx];
+  const session = SESSIONS[sessionType];
+  const allExercises = [...session.exercises, ...(session.appendix || [])];
+  const exercise = allExercises[exerciseIndex];
   if (!exercise) return null;
-  if (!Number.isInteger(setIdx) || setIdx < 0 || setIdx >= exercise.sets) {
+  if (
+    !Number.isInteger(setIndex) ||
+    setIndex < 0 ||
+    setIndex >= exercise.sets
+  ) {
     return null;
   }
   return {
     week,
     sessionType,
-    exerciseIdx,
-    setIdx,
-    weight: c.weight == null ? "" : String(c.weight),
-    reps: c.reps == null ? "" : String(c.reps),
-    done: !!c.done,
+    exerciseIndex,
+    setIndex,
+    weight: rawCell.weight == null ? "" : String(rawCell.weight),
+    reps: rawCell.reps == null ? "" : String(rawCell.reps),
+    done: !!rawCell.done,
   };
 }

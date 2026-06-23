@@ -56,14 +56,14 @@ describe("computePortions", () => {
       // ensure total shares > 0, which validate() enforces at persist time
       const mattShares =
         Math.floor(Math.random() * 10) + (adamShares === 0 ? 1 : 0);
-      const adamAdj = Math.round((Math.random() - 0.5) * 4000) / 100;
-      const mattAdj = Math.round((Math.random() - 0.5) * 4000) / 100;
+      const adamAdjustment = Math.round((Math.random() - 0.5) * 4000) / 100;
+      const mattAdjustment = Math.round((Math.random() - 0.5) * 4000) / 100;
       const { adamPortion, mattPortion } = computePortions({
         amount,
         adam_shares: adamShares,
         matt_shares: mattShares,
-        adam_adjustment: adamAdj,
-        matt_adjustment: mattAdj,
+        adam_adjustment: adamAdjustment,
+        matt_adjustment: mattAdjustment,
       });
       expect(adamPortion + mattPortion).toBeCloseTo(amount, 6);
     }

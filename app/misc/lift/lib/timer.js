@@ -9,12 +9,12 @@ export const RING_CIRCUMFERENCE = 113.1;
 
 /**
  * Formats a second count as M:SS.
- * @param {number} s - Seconds remaining.
+ * @param {number} seconds - Seconds remaining.
  * @return {string} The formatted time.
  */
-export function fmt(s) {
-  const m = Math.floor(s / 60);
-  return m + ":" + String(s % 60).padStart(2, "0");
+export function formatSeconds(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  return minutes + ":" + String(seconds % 60).padStart(2, "0");
 }
 
 /**

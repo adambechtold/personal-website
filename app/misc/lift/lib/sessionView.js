@@ -4,72 +4,81 @@
 /**
  * Builds the per-exercise view rows plus session summary for a workout day.
  * @param {Object} args
- * @param {Object} args.sess - The session definition from SESSIONS.
+ * @param {Object} args.session - The session definition from SESSIONS.
  * @param {Array} args.log - Saved sets for the session, indexed by exercise.
  * @param {number|null} args.expanded - Index of the open exercise, if any.
  * @param {number} args.restCompound - Compound rest seconds (for time estimate).
  * @param {number} args.restIso - Isolation rest seconds (for time estimate).
  * @param {Object} [args.overrides] - Map of exercise index to override name.
  * @return {{exercises: Array, title: string, lean: string, meta: string,
- *   pct: number}} The workout view model.
+ *   percent: number}} The workout view model.
  */
 export function deriveSessionView({
-  sess,
+  session,
   log,
   expanded,
   restCompound,
   restIso,
   overrides = {},
 }) {
-  const mainCount = sess.ex.length;
-  const allEx = [...sess.ex, ...(sess.appendix || [])];
+  const mainExerciseCount = session.exercises.length;
+  const allExercises = [...session.exercises, ...(session.appendix || [])];
   let totalSets = 0;
   let doneSets = 0;
-  let estSec = 0;
-  const exercises = allEx.map((e, i) => {
-    const dc = log[i].sets.filter((s) => s.done).length;
-    totalSets += e.sets;
-    doneSets += dc;
-    estSec += e.sets * (40 + (e.t === "c" ? restCompound : restIso));
-    const complete = dc === e.sets;
-    const override = overrides[i] ?? "";
+  let estimatedSeconds = 0;
+  const exercises = allExercises.map((exercise, index) => {
+    const doneSetCount = log[index].sets.filter((set) => set.done).length;
+    totalSets += exercise.sets;
+    doneSets += doneSetCount;
+    estimatedSeconds +=
+      exercise.sets * (40 + (exercise.type === "c" ? restCompound : restIso));
+    const complete = doneSetCount === exercise.sets;
+    const override = overrides[index] ?? "";
     const hasOverride = override.trim() !== "";
     return {
-      idx: i,
-      name: hasOverride ? override : e.n,
-      baseName: e.n,
+      index,
+      name: hasOverride ? override : exercise.name,
+      baseName: exercise.name,
       override,
-      originalName: hasOverride ? e.n : null,
-      sub: e.sub,
-      target: e.sets + " × " + e.lo + "–" + e.hi,
-      rest: e.t === "c" ? "2–3 min" : "60–90 sec",
-      open: expanded === i,
-      progress: dc + "/" + e.sets,
+      originalName: hasOverride ? exercise.name : null,
+      subLabel: exercise.subLabel,
+      target: exercise.sets + " × " + exercise.repLow + "–" + exercise.repHigh,
+      rest: exercise.type === "c" ? "2–3 min" : "60–90 sec",
+      open: expanded === index,
+      progress: doneSetCount + "/" + exercise.sets,
       complete,
-      ph: e.lo + "–" + e.hi,
-      sets: log[i].sets,
-      isAppendix: i >= mainCount,
+      placeholder: exercise.repLow + "–" + exercise.repHigh,
+      sets: log[index].sets,
+      isAppendix: index >= mainExerciseCount,
     };
   });
-  const estMin = Math.max(5, Math.round(estSec / 60 / 5) * 5);
+  const estimatedMinutes = Math.max(
+    5,
+    Math.round(estimatedSeconds / 60 / 5) * 5
+  );
   return {
     exercises,
-    title: sess.title,
-    lean: sess.lean,
+    title: session.title,
+    lean: session.lean,
     meta:
-      sess.ex.length + " lifts · " + totalSets + " sets · ~" + estMin + " min",
-    pct: totalSets ? Math.round((doneSets / totalSets) * 100) : 0,
-    appendixStart: sess.appendix?.length ? mainCount : null,
+      session.exercises.length +
+      " lifts · " +
+      totalSets +
+      " sets · ~" +
+      estimatedMinutes +
+      " min",
+    percent: totalSets ? Math.round((doneSets / totalSets) * 100) : 0,
+    appendixStart: session.appendix?.length ? mainExerciseCount : null,
   };
 }
 
 /**
  * The heading and note for a non-workout day.
- * @param {string} sid - The session id ("run" or "off").
+ * @param {string} sessionId - The session id ("run" or "off").
  * @return {{restTitle: string, restNote: string}} The rest-day copy.
  */
-export function restDayCopy(sid) {
-  if (sid === "run") {
+export function restDayCopy(sessionId) {
+  if (sessionId === "run") {
     return {
       restTitle: "Run",
       restNote:

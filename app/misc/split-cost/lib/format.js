@@ -20,20 +20,20 @@ export function formatCurrency(amount, currency) {
 
 /**
  * Formats a YYYY-MM-DD date string for display.
- * @param {string} dateStr - Date string in YYYY-MM-DD format.
+ * @param {string} dateString - Date string in YYYY-MM-DD format.
  * @return {string} Formatted date (e.g. "Jun 15").
  */
-export function formatDate(dateStr) {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+export function formatDate(dateString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 /**
  * Coerces a DB date value (Date or string) to a YYYY-MM-DD string.
- * @param {Date|string} d - The date value.
+ * @param {Date|string} date - The date value.
  * @return {string} The YYYY-MM-DD string.
  */
-export function toDateStr(d) {
-  return typeof d === "string" ? d : d.toISOString().slice(0, 10);
+export function toDateString(date) {
+  return typeof date === "string" ? date : date.toISOString().slice(0, 10);
 }

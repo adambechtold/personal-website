@@ -6,7 +6,7 @@ import styles from "./split-cost.module.css";
 import Button from "../../components/ui/Button";
 import { addExpense, updateExpense, deleteExpense } from "./actions";
 import { computeSettlement } from "./calc";
-import { TODAY, toDateStr } from "./lib/format";
+import { TODAY, toDateString } from "./lib/format";
 import SettlementSummary from "./components/SettlementSummary";
 import ExpenseForm from "./components/ExpenseForm";
 import ExpenseList from "./components/ExpenseList";
@@ -50,7 +50,7 @@ export default function TripTracker({ initialExpenses }) {
   useEffect(() => {
     const saved = localStorage.getItem("trip-person");
     if (saved === "adam" || saved === "matt")
-      setForm((f) => ({ ...f, paid_by: saved }));
+      setForm((previous) => ({ ...previous, paid_by: saved }));
   }, []);
 
   const settlement = computeSettlement(initialExpenses);
@@ -58,32 +58,32 @@ export default function TripTracker({ initialExpenses }) {
 
   /**
    * Handles add-expense form submission.
-   * @param {React.FormEvent} e
+   * @param {React.FormEvent} event
    */
-  async function handleAdd(e) {
-    e.preventDefault();
+  async function handleAdd(event) {
+    event.preventDefault();
     setPending(true);
     try {
       await addExpense(form);
       window.location.reload();
-    } catch (err) {
-      alert("Failed to add expense: " + err.message);
+    } catch (error) {
+      alert("Failed to add expense: " + error.message);
       setPending(false);
     }
   }
 
   /**
    * Handles edit-expense form submission.
-   * @param {React.FormEvent} e
+   * @param {React.FormEvent} event
    */
-  async function handleUpdate(e) {
-    e.preventDefault();
+  async function handleUpdate(event) {
+    event.preventDefault();
     setPending(true);
     try {
       await updateExpense(editId, editForm);
       window.location.reload();
-    } catch (err) {
-      alert("Failed to update expense: " + err.message);
+    } catch (error) {
+      alert("Failed to update expense: " + error.message);
       setPending(false);
     }
   }
@@ -98,30 +98,30 @@ export default function TripTracker({ initialExpenses }) {
     try {
       await deleteExpense(id);
       window.location.reload();
-    } catch (err) {
-      alert("Failed to delete expense: " + err.message);
+    } catch (error) {
+      alert("Failed to delete expense: " + error.message);
       setPending(false);
     }
   }
 
   /**
    * Opens the inline edit form for an expense.
-   * @param {Object} exp - Expense row.
+   * @param {Object} expense - Expense row.
    */
-  function startEdit(exp) {
-    setEditId(exp.id);
+  function startEdit(expense) {
+    setEditId(expense.id);
     setEditForm({
-      paid_by: exp.paid_by,
-      amount: parseFloat(exp.amount).toFixed(2),
-      description: exp.description,
-      expense_date: toDateStr(exp.expense_date),
-      currency: exp.currency || "USD",
-      rate_to_base: parseFloat(exp.rate_to_base),
-      rate_date: toDateStr(exp.rate_date),
-      adam_shares: exp.adam_shares.toString(),
-      matt_shares: exp.matt_shares.toString(),
-      adam_adjustment: parseFloat(exp.adam_adjustment).toString(),
-      matt_adjustment: parseFloat(exp.matt_adjustment).toString(),
+      paid_by: expense.paid_by,
+      amount: parseFloat(expense.amount).toFixed(2),
+      description: expense.description,
+      expense_date: toDateString(expense.expense_date),
+      currency: expense.currency || "USD",
+      rate_to_base: parseFloat(expense.rate_to_base),
+      rate_date: toDateString(expense.rate_date),
+      adam_shares: expense.adam_shares.toString(),
+      matt_shares: expense.matt_shares.toString(),
+      adam_adjustment: parseFloat(expense.adam_adjustment).toString(),
+      matt_adjustment: parseFloat(expense.matt_adjustment).toString(),
     });
   }
 

@@ -6,7 +6,7 @@ import Card from "../../../components/ui/Card";
 import Check from "./Check";
 import {
   RING_CIRCUMFERENCE,
-  fmt,
+  formatSeconds,
   getRemainingTimerDurationSeconds,
 } from "../lib/timer";
 
@@ -29,8 +29,8 @@ export default function RestTimer({
   onDismiss,
 }) {
   const remaining = getRemainingTimerDurationSeconds(timer, now);
-  const frac = timer.total ? remaining / timer.total : 0;
-  const offset = (RING_CIRCUMFERENCE * (1 - frac)).toFixed(1);
+  const fraction = timer.total ? remaining / timer.total : 0;
+  const offset = (RING_CIRCUMFERENCE * (1 - fraction)).toFixed(1);
   const label = remaining === 0 ? "Rest complete" : timer.label;
 
   return (
@@ -59,7 +59,7 @@ export default function RestTimer({
       </svg>
       <div className={styles.timerInfo}>
         <div className={styles.timerLabel}>{label}</div>
-        <div className={styles.timerTime}>{fmt(remaining)}</div>
+        <div className={styles.timerTime}>{formatSeconds(remaining)}</div>
       </div>
       <Button
         variant="outlined"

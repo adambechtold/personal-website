@@ -48,10 +48,10 @@ async function fetchRate(currency, date) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
     if (!data || typeof data.rates?.USD !== "number") {
       throw new Error("Unexpected response shape");
     }
