@@ -290,6 +290,13 @@
   font-size: 0.75rem;
 }
 
+.exOriginal {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--faint);
+}
+
 .exTarget {
   margin-top: 3px;
   font-size: 0.75rem;
@@ -320,6 +327,74 @@
 
 .exBody {
   padding: 0 14px 12px;
+}
+
+.editNameBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--faint);
+  line-height: 0;
+  cursor: pointer;
+}
+
+.nameEditRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 14px 14px;
+}
+
+.nameEditInput {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  background: #fff;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0 12px;
+  outline: none;
+}
+
+.nameConfirmBtn {
+  flex: none;
+  width: 42px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+
+.nameCancelBtn {
+  flex: none;
+  width: 42px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .setColHead {

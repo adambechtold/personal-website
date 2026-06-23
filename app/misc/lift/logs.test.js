@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLogs } from "./logs";
+import { buildLogs, buildOverrides } from "./logs";
 import { PROGRAM_WEEKS } from "./data";
 
 const SID = "upperA";
@@ -125,5 +125,48 @@ describe("rolling sets forward", () => {
       done: false,
       isRolledForward: false,
     });
+  });
+});
+
+/**
+ * @param {Object} overrides - Fields to override on the default override row.
+ * @return {Object} An exercise-override row for upperA / exercise 0.
+ */
+function overrideRow(overrides) {
+  return {
+    week: 1,
+    session_type: SID,
+    exercise_idx: EX,
+    name: "DB Bench",
+    ...overrides,
+  };
+}
+
+describe("buildOverrides", () => {
+  it("gives every week and session an empty bucket when nothing is saved", () => {
+    const overrides = buildOverrides();
+    for (let week = 1; week <= PROGRAM_WEEKS; week++) {
+      expect(overrides[week][SID]).toEqual({});
+    }
+  });
+
+  it("maps a saved override onto its week/session/exercise", () => {
+    const overrides = buildOverrides([overrideRow({ name: "Smith Bench" })]);
+    expect(overrides[1][SID][EX]).toBe("Smith Bench");
+  });
+
+  it("ignores empty and whitespace-only override names", () => {
+    const overrides = buildOverrides([
+      overrideRow({ exercise_idx: 0, name: "" }),
+      overrideRow({ exercise_idx: 1, name: "   " }),
+    ]);
+    expect(overrides[1][SID][0]).toBeUndefined();
+    expect(overrides[1][SID][1]).toBeUndefined();
+  });
+
+  it("scopes an override to its own week", () => {
+    const overrides = buildOverrides([overrideRow({ week: 1 })]);
+    expect(overrides[1][SID][EX]).toBe("DB Bench");
+    expect(overrides[2][SID][EX]).toBeUndefined();
   });
 });
