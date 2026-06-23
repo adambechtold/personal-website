@@ -3,6 +3,7 @@
 import { sql } from "@vercel/postgres";
 import { SESSIONS, WEEK } from "./data";
 import { requireAuth } from "../../lib/auth";
+import { normalizeCell } from "./lib/normalizeCell";
 
 const VALID_SESSIONS = new Set(Object.keys(SESSIONS));
 const PROGRAM_WEEKS = 6;
@@ -44,34 +45,6 @@ export async function loadLogs() {
     FROM lift_set_log
   `;
   return rows;
-}
-
-/**
- * Validates and normalizes one cell, or returns null if it's out of bounds.
- * @param {Object} c - The raw cell descriptor.
- * @return {Object|null} The normalized cell, or null to skip it.
- */
-function normalizeCell(c) {
-  const week = parseInt(c.week, 10);
-  const sessionType = String(c.session_type);
-  const exerciseIdx = parseInt(c.exercise_idx, 10);
-  const setIdx = parseInt(c.set_idx, 10);
-  if (!Number.isInteger(week) || week < 1 || week > PROGRAM_WEEKS) return null;
-  if (!VALID_SESSIONS.has(sessionType)) return null;
-  const exercise = SESSIONS[sessionType].ex[exerciseIdx];
-  if (!exercise) return null;
-  if (!Number.isInteger(setIdx) || setIdx < 0 || setIdx >= exercise.sets) {
-    return null;
-  }
-  return {
-    week,
-    sessionType,
-    exerciseIdx,
-    setIdx,
-    weight: c.weight == null ? "" : String(c.weight),
-    reps: c.reps == null ? "" : String(c.reps),
-    done: !!c.done,
-  };
 }
 
 /**
