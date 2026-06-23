@@ -329,19 +329,26 @@
   padding: 0 14px 12px;
 }
 
+.editNameBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--faint);
+  line-height: 0;
+  cursor: pointer;
+}
+
 .nameEditRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 2px 4px 12px;
-}
-
-.nameEditLabel {
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
+  padding: 2px 14px 14px;
 }
 
 .nameEditInput {
@@ -359,16 +366,33 @@
   outline: none;
 }
 
-.nameClearBtn {
+.nameConfirmBtn {
   flex: none;
+  width: 42px;
   height: 40px;
-  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+
+.nameCancelBtn {
+  flex: none;
+  width: 42px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   background: transparent;
   border: 1px solid var(--border-input);
   border-radius: var(--radius-input);
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.875rem;
   font-family: inherit;
   cursor: pointer;
 }

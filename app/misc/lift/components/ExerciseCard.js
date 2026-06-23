@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import styles from "../lift.module.css";
 import Card from "../../../components/ui/Card";
@@ -6,7 +6,8 @@ import Check from "./Check";
 
 /**
  * A single collapsible exercise: header with progress, and (when open) the
- * editable set rows for weight, reps, and done.
+ * editable set rows for weight, reps, and done. The name can be renamed via the
+ * pencil button, which reveals a confirm-or-cancel input next to it.
  * @param {Object} props
  * @param {Object} props.ex - The exercise view model from deriveSessionView.
  * @param {string} props.unit - Weight unit label.
@@ -28,11 +29,64 @@ export default function ExerciseCard({
   onToggleDone,
   onRenameExercise,
 }) {
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
+
+  /**
+   * Opens the name editor seeded with the current override, without toggling
+   * the card's expanded state.
+   * @param {React.MouseEvent} e - The click event.
+   */
+  function startEditName(e) {
+    e.stopPropagation();
+    setDraftName(ex.override);
+    setEditingName(true);
+  }
+
+  /** Commits the draft name (empty clears the override) and closes the editor. */
+  function confirmName() {
+    onRenameExercise(ex.idx, draftName);
+    setEditingName(false);
+  }
+
+  /** Closes the editor without saving. */
+  function cancelName() {
+    setEditingName(false);
+  }
+
+  /**
+   * Confirms on Enter, cancels on Escape, while typing a name.
+   * @param {React.KeyboardEvent} e - The key event.
+   */
+  function onNameKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      confirmName();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelName();
+    }
+  }
+
+  /**
+   * Toggles the card on Enter/Space when the header has keyboard focus.
+   * @param {React.KeyboardEvent} e - The key event.
+   */
+  function onHeaderKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onToggleExpand(ex.idx);
+    }
+  }
+
   return (
     <Card className={styles.exCard}>
-      <button
+      <div
         className={styles.exHeader}
+        role="button"
+        tabIndex={0}
         onClick={() => onToggleExpand(ex.idx)}
+        onKeyDown={onHeaderKeyDown}
       >
         <div
           className={`${styles.exBadge} ${
@@ -45,6 +99,26 @@ export default function ExerciseCard({
           <div className={styles.exName}>
             {ex.name}
             {ex.sub && <span className={styles.exSub}> {ex.sub}</span>}
+            <button
+              type="button"
+              className={styles.editNameBtn}
+              onClick={startEditName}
+              aria-label="Edit exercise name"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+              </svg>
+            </button>
           </div>
           {ex.originalName && (
             <div className={styles.exOriginal}>{ex.originalName}</div>
@@ -77,30 +151,40 @@ export default function ExerciseCard({
             <path d="M6 9l6 6 6-6" />
           </svg>
         </div>
-      </button>
+      </div>
+
+      {editingName && (
+        <div className={styles.nameEditRow}>
+          <input
+            className={styles.nameEditInput}
+            value={draftName}
+            placeholder={ex.baseName}
+            aria-label="Override exercise name"
+            autoFocus
+            onChange={(e) => setDraftName(e.target.value)}
+            onKeyDown={onNameKeyDown}
+          />
+          <button
+            type="button"
+            className={styles.nameConfirmBtn}
+            onClick={confirmName}
+            aria-label="Save name"
+          >
+            <Check size={16} stroke="#fff" />
+          </button>
+          <button
+            type="button"
+            className={styles.nameCancelBtn}
+            onClick={cancelName}
+            aria-label="Cancel"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {ex.open && (
         <div className={styles.exBody}>
-          <div className={styles.nameEditRow}>
-            <span className={styles.nameEditLabel}>Name</span>
-            <input
-              className={styles.nameEditInput}
-              value={ex.override}
-              placeholder={ex.baseName}
-              aria-label="Override exercise name"
-              onChange={(e) => onRenameExercise(ex.idx, e.target.value)}
-            />
-            {ex.override.trim() !== "" && (
-              <button
-                type="button"
-                className={styles.nameClearBtn}
-                onClick={() => onRenameExercise(ex.idx, "")}
-                aria-label="Clear name override"
-              >
-                Reset
-              </button>
-            )}
-          </div>
           <div className={styles.setColHead}>
             <span className={styles.colSet}>Set</span>
             <span className={styles.colWeight}>Weight · {unit}</span>
