@@ -215,6 +215,26 @@
   gap: 10px;
 }
 
+.appendixDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #888;
+  margin-top: 4px;
+}
+
+.appendixDivider::before,
+.appendixDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #333;
+}
+
 /* exCard — visual from Card; overflow:hidden clips the open body */
 .exCard {
   overflow: hidden;

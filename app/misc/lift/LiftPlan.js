@@ -414,16 +414,20 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
 
             <div className={styles.exList}>
               {view.exercises.map((ex) => (
-                <ExerciseCard
-                  key={ex.idx}
-                  ex={ex}
-                  unit={unit}
-                  onToggleExpand={toggleExpand}
-                  onOpenWeight={setWeightEditor}
-                  onStepReps={stepReps}
-                  onInputReps={inputReps}
-                  onToggleDone={toggleDone}
-                />
+                <React.Fragment key={ex.idx}>
+                  {ex.idx === view.appendixStart && (
+                    <div className={styles.appendixDivider}>Abs</div>
+                  )}
+                  <ExerciseCard
+                    ex={ex}
+                    unit={unit}
+                    onToggleExpand={toggleExpand}
+                    onOpenWeight={setWeightEditor}
+                    onStepReps={stepReps}
+                    onInputReps={inputReps}
+                    onToggleDone={toggleDone}
+                  />
+                </React.Fragment>
               ))}
             </div>
           </div>

@@ -19,10 +19,12 @@ export function deriveSessionView({
   restCompound,
   restIso,
 }) {
+  const mainCount = sess.ex.length;
+  const allEx = [...sess.ex, ...(sess.appendix || [])];
   let totalSets = 0;
   let doneSets = 0;
   let estSec = 0;
-  const exercises = sess.ex.map((e, i) => {
+  const exercises = allEx.map((e, i) => {
     const dc = log[i].sets.filter((s) => s.done).length;
     totalSets += e.sets;
     doneSets += dc;
@@ -39,6 +41,7 @@ export function deriveSessionView({
       complete,
       ph: e.lo + "–" + e.hi,
       sets: log[i].sets,
+      isAppendix: i >= mainCount,
     };
   });
   const estMin = Math.max(5, Math.round(estSec / 60 / 5) * 5);
@@ -49,6 +52,7 @@ export function deriveSessionView({
     meta:
       sess.ex.length + " lifts · " + totalSets + " sets · ~" + estMin + " min",
     pct: totalSets ? Math.round((doneSets / totalSets) * 100) : 0,
+    appendixStart: sess.appendix?.length ? mainCount : null,
   };
 }
 
