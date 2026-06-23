@@ -8,7 +8,7 @@ import { COOKIE_NAME } from "../lib/session";
  * @return {Response} The redirect response.
  */
 export function GET(request) {
-  const res = NextResponse.redirect(new URL("/login", request.url));
-  res.cookies.delete(COOKIE_NAME);
-  return res;
+  const response = NextResponse.redirect(new URL("/login", request.url));
+  response.cookies.delete(COOKIE_NAME);
+  return response;
 }

@@ -8,7 +8,9 @@ import { normalizeCell } from "./lib/normalizeCell";
 const VALID_SESSIONS = new Set(Object.keys(SESSIONS));
 const PROGRAM_WEEKS = 6;
 const RUN_DAY_INDICES = new Set(
-  WEEK.map((d, i) => (d.s === "run" ? i : -1)).filter((i) => i !== -1)
+  WEEK.map((day, index) => (day.session === "run" ? index : -1)).filter(
+    (index) => index !== -1
+  )
 );
 
 /**
@@ -85,34 +87,45 @@ export async function loadOverrides() {
  * name as if it was never renamed.
  * @param {number} week - Program week (1–PROGRAM_WEEKS).
  * @param {string} sessionType - The session id.
- * @param {number} exerciseIdx - The exercise index (main lifts + appendix).
+ * @param {number} exerciseIndex - The exercise index (main lifts + appendix).
  * @param {string} name - The override name, or "" to clear it.
  */
-export async function saveOverride(week, sessionType, exerciseIdx, name) {
+export async function saveOverride(week, sessionType, exerciseIndex, name) {
   await requireAuth();
-  const w = parseInt(week, 10);
+  const weekNumber = parseInt(week, 10);
   const sessionTypeStr = String(sessionType);
-  const idx = parseInt(exerciseIdx, 10);
-  if (!Number.isInteger(w) || w < 1 || w > PROGRAM_WEEKS) return;
+  const parsedExerciseIndex = parseInt(exerciseIndex, 10);
+  if (
+    !Number.isInteger(weekNumber) ||
+    weekNumber < 1 ||
+    weekNumber > PROGRAM_WEEKS
+  )
+    return;
   if (!VALID_SESSIONS.has(sessionTypeStr)) return;
-  const sess = SESSIONS[sessionTypeStr];
-  const exerciseCount = sess.ex.length + (sess.appendix?.length || 0);
-  if (!Number.isInteger(idx) || idx < 0 || idx >= exerciseCount) return;
+  const session = SESSIONS[sessionTypeStr];
+  const exerciseCount =
+    session.exercises.length + (session.appendix?.length || 0);
+  if (
+    !Number.isInteger(parsedExerciseIndex) ||
+    parsedExerciseIndex < 0 ||
+    parsedExerciseIndex >= exerciseCount
+  )
+    return;
   await ensureOverrideSchema();
   const trimmed = name == null ? "" : String(name).trim();
   if (trimmed === "") {
     await sql`
       DELETE FROM lift_exercise_override
-      WHERE week = ${w}
+      WHERE week = ${weekNumber}
         AND session_type = ${sessionTypeStr}
-        AND exercise_idx = ${idx}
+        AND exercise_idx = ${parsedExerciseIndex}
     `;
     return;
   }
   await sql`
     INSERT INTO lift_exercise_override
       (week, session_type, exercise_idx, name, updated_at)
-    VALUES (${w}, ${sessionTypeStr}, ${idx}, ${trimmed}, now())
+    VALUES (${weekNumber}, ${sessionTypeStr}, ${parsedExerciseIndex}, ${trimmed}, now())
     ON CONFLICT (week, session_type, exercise_idx)
     DO UPDATE SET name = EXCLUDED.name, updated_at = now()
   `;
@@ -153,20 +166,27 @@ export async function loadRunLogs() {
 /**
  * Upserts a run log entry for a specific week and day.
  * @param {number} week - Program week (1–PROGRAM_WEEKS).
- * @param {number} dayIdx - Day index (0–6, Mon–Sun).
+ * @param {number} dayIndex - Day index (0–6, Mon–Sun).
  * @param {string} distance - Distance run (stored as text).
  * @param {boolean} done - Whether the run is marked complete.
  */
-export async function saveRunLog(week, dayIdx, distance, done) {
+export async function saveRunLog(week, dayIndex, distance, done) {
   await requireAuth();
-  const w = parseInt(week, 10);
-  const d = parseInt(dayIdx, 10);
-  if (!Number.isInteger(w) || w < 1 || w > PROGRAM_WEEKS) return;
-  if (!RUN_DAY_INDICES.has(d)) return;
+  const weekNumber = parseInt(week, 10);
+  const parsedDayIndex = parseInt(dayIndex, 10);
+  if (
+    !Number.isInteger(weekNumber) ||
+    weekNumber < 1 ||
+    weekNumber > PROGRAM_WEEKS
+  )
+    return;
+  if (!RUN_DAY_INDICES.has(parsedDayIndex)) return;
   await ensureRunSchema();
   await sql`
     INSERT INTO lift_run_log (week, day_idx, distance, done, updated_at)
-    VALUES (${w}, ${d}, ${String(distance)}, ${!!done}, now())
+    VALUES (${weekNumber}, ${parsedDayIndex}, ${String(
+      distance
+    )}, ${!!done}, now())
     ON CONFLICT (week, day_idx)
     DO UPDATE SET
       distance = EXCLUDED.distance,
@@ -185,15 +205,15 @@ export async function saveCells(cells) {
   await requireAuth();
   if (!Array.isArray(cells) || cells.length === 0) return;
   await ensureSchema();
-  for (const raw of cells) {
-    const c = normalizeCell(raw);
-    if (!c) continue;
+  for (const rawCell of cells) {
+    const cell = normalizeCell(rawCell);
+    if (!cell) continue;
     await sql`
       INSERT INTO lift_set_log
         (week, session_type, exercise_idx, set_idx, weight, reps, done, updated_at)
       VALUES
-        (${c.week}, ${c.sessionType}, ${c.exerciseIdx}, ${c.setIdx},
-         ${c.weight}, ${c.reps}, ${c.done}, now())
+        (${cell.week}, ${cell.sessionType}, ${cell.exerciseIndex}, ${cell.setIndex},
+         ${cell.weight}, ${cell.reps}, ${cell.done}, now())
       ON CONFLICT (week, session_type, exercise_idx, set_idx)
       DO UPDATE SET
         weight = EXCLUDED.weight,

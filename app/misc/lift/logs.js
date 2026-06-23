@@ -16,9 +16,9 @@ function createEmptyLogs() {
   for (let week = 1; week <= PROGRAM_WEEKS; week++) {
     logs[week] = {};
     for (const sessionId of Object.keys(SESSIONS)) {
-      const sess = SESSIONS[sessionId];
-      const allEx = [...sess.ex, ...(sess.appendix || [])];
-      logs[week][sessionId] = allEx.map((exercise) => ({
+      const session = SESSIONS[sessionId];
+      const allExercises = [...session.exercises, ...(session.appendix || [])];
+      logs[week][sessionId] = allExercises.map((exercise) => ({
         sets: Array.from({ length: exercise.sets }, createEmptySet),
       }));
     }
@@ -64,13 +64,13 @@ function isUntouched(set) {
  * @param {Object} logs - The logs structure.
  * @param {number} week - The week being filled.
  * @param {string} sessionId - The session id.
- * @param {number} exerciseIdx - The exercise index.
- * @param {number} setIdx - The set index.
+ * @param {number} exerciseIndex - The exercise index.
+ * @param {number} setIndex - The set index.
  * @return {Object|null} The source set, or null if no earlier week logged it.
  */
-function findSetToRollForward(logs, week, sessionId, exerciseIdx, setIdx) {
+function findSetToRollForward(logs, week, sessionId, exerciseIndex, setIndex) {
   for (let priorWeek = week - 1; priorWeek >= 1; priorWeek--) {
-    const set = logs[priorWeek][sessionId][exerciseIdx].sets[setIdx];
+    const set = logs[priorWeek][sessionId][exerciseIndex].sets[setIndex];
     if (!set.isRolledForward && hasLoggedValue(set)) return set;
   }
   return null;
@@ -85,15 +85,15 @@ function findSetToRollForward(logs, week, sessionId, exerciseIdx, setIdx) {
 function rollSetsForward(logs) {
   for (let week = 2; week <= PROGRAM_WEEKS; week++) {
     for (const sessionId of Object.keys(SESSIONS)) {
-      logs[week][sessionId].forEach((exercise, exerciseIdx) => {
-        exercise.sets.forEach((set, setIdx) => {
+      logs[week][sessionId].forEach((exercise, exerciseIndex) => {
+        exercise.sets.forEach((set, setIndex) => {
           if (!isUntouched(set)) return;
           const source = findSetToRollForward(
             logs,
             week,
             sessionId,
-            exerciseIdx,
-            setIdx
+            exerciseIndex,
+            setIndex
           );
           if (!source) return;
           set.weight = source.weight;

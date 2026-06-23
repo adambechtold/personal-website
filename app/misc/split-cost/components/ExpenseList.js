@@ -5,33 +5,35 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import ExpenseForm from "./ExpenseForm";
 import { computePortions } from "../calc";
-import { formatCurrency, formatDate, toDateStr } from "../lib/format";
+import { formatCurrency, formatDate, toDateString } from "../lib/format";
 
 /**
  * Sorts and filters the expenses for display.
  * @param {Array} expenses - All expenses.
  * @param {string} filterUser - "all" | "adam" | "matt".
- * @param {{field: string, dir: string}} sort - Sort field and direction.
+ * @param {{field: string, direction: string}} sort - Sort field and direction.
  * @return {Array} The visible, ordered expenses.
  */
 function selectVisible(expenses, filterUser, sort) {
   return [...expenses]
-    .filter((e) => filterUser === "all" || e.paid_by === filterUser)
-    .sort((a, b) => {
-      let av;
-      let bv;
+    .filter((expense) => filterUser === "all" || expense.paid_by === filterUser)
+    .sort((first, second) => {
+      let firstValue;
+      let secondValue;
       if (sort.field === "date_added") {
-        av = a.id;
-        bv = b.id;
+        firstValue = first.id;
+        secondValue = second.id;
       } else if (sort.field === "expense_date") {
-        av = a.expense_date;
-        bv = b.expense_date;
+        firstValue = first.expense_date;
+        secondValue = second.expense_date;
       } else {
-        av = parseFloat(a.amount) * (parseFloat(a.rate_to_base) || 1);
-        bv = parseFloat(b.amount) * (parseFloat(b.rate_to_base) || 1);
+        firstValue =
+          parseFloat(first.amount) * (parseFloat(first.rate_to_base) || 1);
+        secondValue =
+          parseFloat(second.amount) * (parseFloat(second.rate_to_base) || 1);
       }
-      if (av < bv) return sort.dir === "asc" ? -1 : 1;
-      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      if (firstValue < secondValue) return sort.direction === "asc" ? -1 : 1;
+      if (firstValue > secondValue) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
 }
@@ -45,9 +47,9 @@ function selectVisible(expenses, filterUser, sort) {
  * @param {Object|null} props.editForm - The edit form state.
  * @param {Function} props.setEditForm - Edit form setter.
  * @param {boolean} props.pending - Whether a mutation is in flight.
- * @param {Function} props.onStartEdit - (exp) => void.
+ * @param {Function} props.onStartEdit - (expense) => void.
  * @param {Function} props.onDelete - (id) => void.
- * @param {Function} props.onUpdate - (e) => void form submit.
+ * @param {Function} props.onUpdate - (event) => void form submit.
  * @param {Function} props.onCancelEdit - () => void.
  * @return {React.ReactElement}
  */
@@ -63,7 +65,7 @@ export default function ExpenseList({
   onCancelEdit,
 }) {
   const [filterUser, setFilterUser] = useState("all");
-  const [sort, setSort] = useState({ field: "date_added", dir: "desc" });
+  const [sort, setSort] = useState({ field: "date_added", direction: "desc" });
 
   const visibleExpenses = selectVisible(expenses, filterUser, sort);
 
@@ -107,12 +109,15 @@ export default function ExpenseList({
                 onClick={() =>
                   setSort(
                     active
-                      ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
-                      : { field, dir: "desc" }
+                      ? {
+                          field,
+                          direction: sort.direction === "desc" ? "asc" : "desc",
+                        }
+                      : { field, direction: "desc" }
                   )
                 }
               >
-                {label} {active ? (sort.dir === "desc" ? "↓" : "↑") : ""}
+                {label} {active ? (sort.direction === "desc" ? "↓" : "↑") : ""}
               </Button>
             );
           })}
@@ -121,14 +126,14 @@ export default function ExpenseList({
       {visibleExpenses.length === 0 && (
         <p className={styles.empty}>No expenses yet.</p>
       )}
-      {visibleExpenses.map((exp) => {
-        const { adamPortion, mattPortion } = computePortions(exp);
-        const rate = parseFloat(exp.rate_to_base) || 1;
-        const currency = exp.currency || "USD";
+      {visibleExpenses.map((expense) => {
+        const { adamPortion, mattPortion } = computePortions(expense);
+        const rate = parseFloat(expense.rate_to_base) || 1;
+        const currency = expense.currency || "USD";
         const isUSD = currency === "USD";
-        const isEditing = editId === exp.id;
+        const isEditing = editId === expense.id;
         return (
-          <Card key={exp.id} className={styles.expenseCard}>
+          <Card key={expense.id} className={styles.expenseCard}>
             {isEditing ? (
               <form onSubmit={onUpdate} className={styles.expenseForm}>
                 <ExpenseForm form={editForm} setForm={setEditForm} />
@@ -155,25 +160,25 @@ export default function ExpenseList({
                 <div className={styles.expenseMain}>
                   <div className={styles.expenseInfo}>
                     <span className={styles.expenseDesc}>
-                      {exp.description}
+                      {expense.description}
                     </span>
                     <span className={styles.expenseMeta}>
-                      {formatDate(exp.expense_date)} ·{" "}
-                      {exp.paid_by === "adam" ? "Adam" : "Matt"} paid{" "}
+                      {formatDate(expense.expense_date)} ·{" "}
+                      {expense.paid_by === "adam" ? "Adam" : "Matt"} paid{" "}
                       {isUSD
-                        ? formatCurrency(parseFloat(exp.amount), "USD")
+                        ? formatCurrency(parseFloat(expense.amount), "USD")
                         : `${formatCurrency(
-                            parseFloat(exp.amount),
+                            parseFloat(expense.amount),
                             currency
                           )} (${formatCurrency(
-                            parseFloat(exp.amount) * rate,
+                            parseFloat(expense.amount) * rate,
                             "USD"
                           )})`}
                     </span>
                     {!isUSD && (
                       <span className={styles.rateNote}>
                         1 {currency} = ${rate.toFixed(4)} on{" "}
-                        {formatDate(toDateStr(exp.rate_date))}
+                        {formatDate(toDateString(expense.rate_date))}
                       </span>
                     )}
                   </div>
@@ -181,7 +186,7 @@ export default function ExpenseList({
                     <Button
                       variant="outlined"
                       size="sm"
-                      onClick={() => onStartEdit(exp)}
+                      onClick={() => onStartEdit(expense)}
                       disabled={pending}
                     >
                       Edit
@@ -190,7 +195,7 @@ export default function ExpenseList({
                       variant="outlined"
                       size="sm"
                       className={styles.deleteBtn}
-                      onClick={() => onDelete(exp.id)}
+                      onClick={() => onDelete(expense.id)}
                       disabled={pending}
                     >
                       Delete

@@ -16,14 +16,14 @@ const AUTO_DISMISS_MS = 3600;
 
 /**
  * Builds a randomized list of emoji particles for the given session type.
- * @param {string} sid - The session ID (e.g. "upperA", "lowerB").
+ * @param {string} sessionId - The session ID (e.g. "upperA", "lowerB").
  * @return {Array<Object>} Array of particle descriptors.
  */
-function buildParticles(sid) {
-  const emojis = SESSION_EMOJIS[sid] ?? ["🎉", "✨", "🔥"];
-  return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-    id: i,
-    emoji: emojis[i % emojis.length],
+function buildParticles(sessionId) {
+  const emojis = SESSION_EMOJIS[sessionId] ?? ["🎉", "✨", "🔥"];
+  return Array.from({ length: PARTICLE_COUNT }, (_, index) => ({
+    id: index,
+    emoji: emojis[index % emojis.length],
     left: Math.random() * 96,
     delay: Math.random() * 1.5,
     duration: 1.6 + Math.random() * 1.8,
@@ -35,15 +35,15 @@ function buildParticles(sid) {
 /**
  * Renders an emoji confetti overlay that auto-dismisses after a short delay.
  * Emojis are chosen based on the session type (upper/lower body).
- * @param {{sid: string, onDone: Function}} props
+ * @param {{sessionId: string, onDone: Function}} props
  * @return {React.ReactElement} The rendered overlay.
  */
-export default function WorkoutCelebration({ sid, onDone }) {
-  const particles = useRef(buildParticles(sid)).current;
+export default function WorkoutCelebration({ sessionId, onDone }) {
+  const particles = useRef(buildParticles(sessionId)).current;
 
   useEffect(() => {
-    const t = setTimeout(onDone, AUTO_DISMISS_MS);
-    return () => clearTimeout(t);
+    const timeoutId = setTimeout(onDone, AUTO_DISMISS_MS);
+    return () => clearTimeout(timeoutId);
   }, [onDone]);
 
   return (
@@ -52,20 +52,22 @@ export default function WorkoutCelebration({ sid, onDone }) {
       onClick={onDone}
       aria-hidden="true"
     >
-      {particles.map((p) => (
+      {particles.map((particle) => (
         <span
-          key={p.id}
+          key={particle.id}
           className={
-            p.clockwise ? styles.celebrationEmojiCw : styles.celebrationEmojiCcw
+            particle.clockwise
+              ? styles.celebrationEmojiCw
+              : styles.celebrationEmojiCcw
           }
           style={{
-            left: `${p.left}%`,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-            fontSize: `${p.size}rem`,
+            left: `${particle.left}%`,
+            animationDelay: `${particle.delay}s`,
+            animationDuration: `${particle.duration}s`,
+            fontSize: `${particle.size}rem`,
           }}
         >
-          {p.emoji}
+          {particle.emoji}
         </span>
       ))}
     </div>
@@ -73,6 +75,6 @@ export default function WorkoutCelebration({ sid, onDone }) {
 }
 
 WorkoutCelebration.propTypes = {
-  sid: PropTypes.string.isRequired,
+  sessionId: PropTypes.string.isRequired,
   onDone: PropTypes.func.isRequired,
 };

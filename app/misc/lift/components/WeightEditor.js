@@ -11,8 +11,8 @@ import Card from "../../../components/ui/Card";
  * @param {string} props.label - Eyebrow label (exercise + set).
  * @param {string} props.value - Current weight value.
  * @param {string} props.unit - Weight unit label.
- * @param {number[]} props.incA - Increment chip amounts.
- * @param {number[]} props.decA - Decrement chip amounts.
+ * @param {number[]} props.weightIncrements - Increment chip amounts.
+ * @param {number[]} props.weightDecrements - Decrement chip amounts.
  * @param {Function} props.onAdjust - (delta) => void.
  * @param {Function} props.onType - (value) => void.
  * @param {Function} props.onClose - Close handler.
@@ -22,8 +22,8 @@ export default function WeightEditor({
   label,
   value,
   unit,
-  incA,
-  decA,
+  weightIncrements,
+  weightDecrements,
   onAdjust,
   onType,
   onClose,
@@ -39,31 +39,31 @@ export default function WeightEditor({
             value={value}
             inputMode="decimal"
             placeholder="0"
-            onChange={(e) => onType(e.target.value)}
+            onChange={(event) => onType(event.target.value)}
           />
           <span className={styles.weightBigUnit}>{unit}</span>
         </div>
         <div className={styles.chipRow}>
-          {decA.map((v) => (
+          {weightDecrements.map((amount) => (
             <Button
-              key={v}
+              key={amount}
               variant="outlined"
               className={styles.chipMinus}
-              onClick={() => onAdjust(-v)}
+              onClick={() => onAdjust(-amount)}
             >
-              −{v}
+              −{amount}
             </Button>
           ))}
         </div>
         <div className={styles.chipRow}>
-          {incA.map((v) => (
+          {weightIncrements.map((amount) => (
             <Button
-              key={v}
+              key={amount}
               variant="accent"
               className={styles.chipPlus}
-              onClick={() => onAdjust(v)}
+              onClick={() => onAdjust(amount)}
             >
-              +{v}
+              +{amount}
             </Button>
           ))}
         </div>
@@ -86,8 +86,8 @@ WeightEditor.propTypes = {
   label: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
   unit: PropTypes.string.isRequired,
-  incA: PropTypes.arrayOf(PropTypes.number).isRequired,
-  decA: PropTypes.arrayOf(PropTypes.number).isRequired,
+  weightIncrements: PropTypes.arrayOf(PropTypes.number).isRequired,
+  weightDecrements: PropTypes.arrayOf(PropTypes.number).isRequired,
   onAdjust: PropTypes.func.isRequired,
   onType: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,

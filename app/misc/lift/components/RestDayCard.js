@@ -8,7 +8,7 @@ import Check from "./Check";
  * The non-workout day view: a run or rest card. Run days also carry a small
  * logger for distance + done plus a route-planning link.
  * @param {Object} props
- * @param {string} props.sid - The session id ("run" or "off").
+ * @param {string} props.sessionId - The session id ("run" or "off").
  * @param {string} props.restTitle - Card heading.
  * @param {string} props.restNote - Card body copy.
  * @param {{distance: string, done: boolean}} props.runEntry - Saved run entry.
@@ -16,7 +16,7 @@ import Check from "./Check";
  * @return {React.ReactElement}
  */
 export default function RestDayCard({
-  sid,
+  sessionId,
   restTitle,
   restNote,
   runEntry,
@@ -26,7 +26,7 @@ export default function RestDayCard({
     <div className={styles.restWrap}>
       <Card
         className={`${styles.restCard} ${
-          sid === "run" && runEntry.done ? styles.restCardDone : ""
+          sessionId === "run" && runEntry.done ? styles.restCardDone : ""
         }`}
       >
         <div className={styles.restIcon}>
@@ -47,7 +47,7 @@ export default function RestDayCard({
         <h1 className={styles.restTitle}>{restTitle}</h1>
         <p className={styles.restNote}>{restNote}</p>
 
-        {sid === "run" && (
+        {sessionId === "run" && (
           <div className={styles.runLogger}>
             <div className={styles.runLoggerRow}>
               <div className={styles.runDistanceField}>
@@ -58,9 +58,10 @@ export default function RestDayCard({
                   placeholder="0.0"
                   onChange={(e) => {
                     const raw = e.target.value.replace(/[^0-9.]/g, "");
-                    const dot = raw.indexOf(".");
-                    const v = dot === -1 ? raw : raw.slice(0, dot + 3);
-                    onCommitRun(v, runEntry.done);
+                    const dotIndex = raw.indexOf(".");
+                    const sanitized =
+                      dotIndex === -1 ? raw : raw.slice(0, dotIndex + 3);
+                    onCommitRun(sanitized, runEntry.done);
                   }}
                 />
                 <span className={styles.runDistanceUnit}>mi</span>
@@ -91,7 +92,7 @@ export default function RestDayCard({
 }
 
 RestDayCard.propTypes = {
-  sid: PropTypes.string.isRequired,
+  sessionId: PropTypes.string.isRequired,
   restTitle: PropTypes.string.isRequired,
   restNote: PropTypes.string.isRequired,
   runEntry: PropTypes.shape({

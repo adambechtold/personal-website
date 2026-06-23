@@ -42,9 +42,9 @@ export default function LiftPlan({
   initialRunLogs,
   initialOverrides,
 }) {
-  const todayIdx = useMemo(() => todayIndex(), []);
+  const todayDayIndex = useMemo(() => todayIndex(), []);
 
-  const [selectedIdx, setSelectedIdx] = useState(todayIdx);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(todayDayIndex);
   const [week, setWeek] = useState(currentWeek);
   const [expanded, setExpanded] = useState(0);
   const [logs, setLogs] = useState(() => buildLogs(initialLogs));
@@ -56,8 +56,8 @@ export default function LiftPlan({
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
   const [weightEditor, setWeightEditor] = useState(null);
-  const [celebrateSid, setCelebrateSid] = useState(null);
-  const prevPctRef = useRef({});
+  const [celebrateSessionId, setCelebrateSessionId] = useState(null);
+  const previousPercentRef = useRef({});
   const celebratedRef = useRef(new Set());
 
   const unit = CONFIG.weightUnit;
@@ -94,7 +94,7 @@ export default function LiftPlan({
 
   useEffect(() => {
     const tick = () => setNow(Date.now());
-    const iv = setInterval(tick, 1000);
+    const intervalId = setInterval(tick, 1000);
     // Re-sync on resume so a slept or backgrounded tab shows the right time.
     const onVisible = () => {
       if (!document.hidden) tick();
@@ -102,44 +102,49 @@ export default function LiftPlan({
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", tick);
     return () => {
-      clearInterval(iv);
+      clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", tick);
     };
   }, []);
 
-  const day = WEEK[selectedIdx];
-  const sid = day.s;
-  const isWorkout = sid !== "run" && sid !== "off";
-  const sessEx = isWorkout
-    ? [...SESSIONS[sid].ex, ...(SESSIONS[sid].appendix || [])]
+  const day = WEEK[selectedDayIndex];
+  const sessionId = day.session;
+  const isWorkout = sessionId !== "run" && sessionId !== "off";
+  const sessionExercises = isWorkout
+    ? [
+        ...SESSIONS[sessionId].exercises,
+        ...(SESSIONS[sessionId].appendix || []),
+      ]
     : [];
 
   /**
    * Selects a day in the strip and collapses any expanded exercise.
-   * @param {number} i - The day index (0–6).
+   * @param {number} dayIndex - The day index (0–6).
    */
-  function selectDay(i) {
-    setSelectedIdx(i);
+  function selectDay(dayIndex) {
+    setSelectedDayIndex(dayIndex);
     setExpanded(0);
   }
 
   /**
    * Toggles an exercise card open/closed; only one is open at a time.
-   * @param {number} i - The exercise index.
+   * @param {number} exerciseIndex - The exercise index.
    */
-  function toggleExpand(i) {
-    setExpanded((cur) => (cur === i ? null : i));
+  function toggleExpand(exerciseIndex) {
+    setExpanded((current) =>
+      current === exerciseIndex ? null : exerciseIndex
+    );
   }
 
   /**
-   * @param {number} sec
+   * @param {number} seconds
    * @param {string} label
    */
-  function startTimer(sec, label) {
+  function startTimer(seconds, label) {
     setTimer({
-      endsAt: Date.now() + sec * 1000,
-      total: sec,
+      endsAt: Date.now() + seconds * 1000,
+      total: seconds,
       label,
       paused: false,
     });
@@ -147,97 +152,120 @@ export default function LiftPlan({
 
   /**
    * Applies set-cell updates for the current week + session to local state and
-   * persists them to the database. Each update is { ex, set, cell }.
+   * persists them to the database. Each update is
+   * { exerciseIndex, setIndex, cell }.
    * @param {Array} updates - The cells to write.
    */
   function commit(updates) {
-    setLogs((prev) => {
-      const next = structuredClone(prev);
-      for (const u of updates) {
-        next[week][sid][u.ex].sets[u.set] = { ...u.cell };
+    setLogs((previous) => {
+      const next = structuredClone(previous);
+      for (const update of updates) {
+        next[week][sessionId][update.exerciseIndex].sets[update.setIndex] = {
+          ...update.cell,
+        };
       }
       return next;
     });
     saveCells(
-      updates.map((u) => ({
+      updates.map((update) => ({
         week,
-        session_type: sid,
-        exercise_idx: u.ex,
-        set_idx: u.set,
-        weight: u.cell.weight,
-        reps: u.cell.reps,
-        done: u.cell.done,
+        session_type: sessionId,
+        exercise_idx: update.exerciseIndex,
+        set_idx: update.setIndex,
+        weight: update.cell.weight,
+        reps: update.cell.reps,
+        done: update.cell.done,
       }))
     ).catch(() => {});
   }
 
   /**
-   * Steps a set's reps by ±1, flooring at 0; an empty field seeds off lo.
-   * @param {number} ex - The exercise index.
-   * @param {number} set - The set index.
+   * Steps a set's reps by ±1, flooring at 0; an empty field seeds off repLow.
+   * @param {number} exerciseIndex - The exercise index.
+   * @param {number} setIndex - The set index.
    * @param {number} delta - The step direction (+1 or -1).
    */
-  function stepReps(ex, set, delta) {
-    const cur0 = logs[week][sid][ex].sets[set];
-    const lo = sessEx[ex].lo;
-    let cur = parseFloat(cur0.reps);
-    if (isNaN(cur)) cur = lo - delta;
-    let nv = cur + delta;
-    if (nv < 0) nv = 0;
+  function stepReps(exerciseIndex, setIndex, delta) {
+    const currentSet = logs[week][sessionId][exerciseIndex].sets[setIndex];
+    const repLow = sessionExercises[exerciseIndex].repLow;
+    let currentReps = parseFloat(currentSet.reps);
+    if (isNaN(currentReps)) currentReps = repLow - delta;
+    let newReps = currentReps + delta;
+    if (newReps < 0) newReps = 0;
     commit([
-      { ex, set, cell: { ...cur0, reps: String(nv), isRolledForward: false } },
+      {
+        exerciseIndex,
+        setIndex,
+        cell: { ...currentSet, reps: String(newReps), isRolledForward: false },
+      },
     ]);
   }
 
   /**
    * Writes a typed reps value (digits only) into a set.
-   * @param {number} ex - The exercise index.
-   * @param {number} set - The set index.
+   * @param {number} exerciseIndex - The exercise index.
+   * @param {number} setIndex - The set index.
    * @param {string} value - The raw input value.
    */
-  function inputReps(ex, set, value) {
-    const v = value.replace(/[^0-9]/g, "");
-    const cur0 = logs[week][sid][ex].sets[set];
-    commit([{ ex, set, cell: { ...cur0, reps: v, isRolledForward: false } }]);
+  function inputReps(exerciseIndex, setIndex, value) {
+    const sanitized = value.replace(/[^0-9]/g, "");
+    const currentSet = logs[week][sessionId][exerciseIndex].sets[setIndex];
+    commit([
+      {
+        exerciseIndex,
+        setIndex,
+        cell: { ...currentSet, reps: sanitized, isRolledForward: false },
+      },
+    ]);
   }
 
   /**
-   * Toggles a set's done flag; on first check auto-fills empty reps with lo
+   * Toggles a set's done flag; on first check auto-fills empty reps with repLow
    * and (when enabled) starts the rest timer for the exercise's type.
-   * @param {number} ex - The exercise index.
-   * @param {number} set - The set index.
+   * @param {number} exerciseIndex - The exercise index.
+   * @param {number} setIndex - The set index.
    */
-  function toggleDone(ex, set) {
-    const cur0 = logs[week][sid][ex].sets[set];
-    const was = cur0.done;
-    const cell = { ...cur0, done: !was, isRolledForward: false };
-    if (!was && cell.reps === "") cell.reps = String(sessEx[ex].lo);
-    commit([{ ex, set, cell }]);
-    if (!was && CONFIG.autoTimer) {
-      const type = sessEx[ex].t;
-      const sec = type === "c" ? restCompound : restIso;
-      startTimer(sec, type === "c" ? "Compound rest" : "Isolation rest");
+  function toggleDone(exerciseIndex, setIndex) {
+    const currentSet = logs[week][sessionId][exerciseIndex].sets[setIndex];
+    const wasDone = currentSet.done;
+    const cell = { ...currentSet, done: !wasDone, isRolledForward: false };
+    if (!wasDone && cell.reps === "") {
+      cell.reps = String(sessionExercises[exerciseIndex].repLow);
+    }
+    commit([{ exerciseIndex, setIndex, cell }]);
+    if (!wasDone && CONFIG.autoTimer) {
+      const type = sessionExercises[exerciseIndex].type;
+      const seconds = type === "c" ? restCompound : restIso;
+      startTimer(seconds, type === "c" ? "Compound rest" : "Isolation rest");
     }
   }
 
   /**
    * Cascade rule: writes a weight to this set and every set below it in the
    * same exercise that isn't already done.
-   * @param {number} ex - The exercise index.
-   * @param {number} set - The starting set index.
+   * @param {number} exerciseIndex - The exercise index.
+   * @param {number} setIndex - The starting set index.
    * @param {string} value - The weight value to write.
    */
-  function applyWeight(ex, set, value) {
-    const arr = logs[week][sid][ex].sets;
+  function applyWeight(exerciseIndex, setIndex, value) {
+    const sets = logs[week][sessionId][exerciseIndex].sets;
     const updates = [
-      { ex, set, cell: { ...arr[set], weight: value, isRolledForward: false } },
+      {
+        exerciseIndex,
+        setIndex,
+        cell: { ...sets[setIndex], weight: value, isRolledForward: false },
+      },
     ];
-    for (let j = set + 1; j < arr.length; j++) {
-      if (!arr[j].done) {
+    for (
+      let belowIndex = setIndex + 1;
+      belowIndex < sets.length;
+      belowIndex++
+    ) {
+      if (!sets[belowIndex].done) {
         updates.push({
-          ex,
-          set: j,
-          cell: { ...arr[j], weight: value, isRolledForward: false },
+          exerciseIndex,
+          setIndex: belowIndex,
+          cell: { ...sets[belowIndex], weight: value, isRolledForward: false },
         });
       }
     }
@@ -250,30 +278,30 @@ export default function LiftPlan({
    * @param {boolean} done - Whether the run is complete.
    */
   function commitRun(distance, done) {
-    setRunLogs((prev) => {
-      const next = { ...prev };
-      next[week] = { ...next[week], [selectedIdx]: { distance, done } };
+    setRunLogs((previous) => {
+      const next = { ...previous };
+      next[week] = { ...next[week], [selectedDayIndex]: { distance, done } };
       return next;
     });
-    saveRunLog(week, selectedIdx, distance, done).catch(() => {});
+    saveRunLog(week, selectedDayIndex, distance, done).catch(() => {});
   }
 
   /**
    * Sets or clears an exercise's display-name override for the current week and
    * session, persisting it. An empty name clears the override, reverting the
    * exercise to its canonical name.
-   * @param {number} ex - The exercise index.
+   * @param {number} exerciseIndex - The exercise index.
    * @param {string} name - The override name, or "" to clear it.
    */
-  function renameExercise(ex, name) {
-    setOverrides((prev) => {
-      const next = structuredClone(prev);
-      const bucket = next[week][sid];
-      if (name.trim() === "") delete bucket[ex];
-      else bucket[ex] = name;
+  function renameExercise(exerciseIndex, name) {
+    setOverrides((previous) => {
+      const next = structuredClone(previous);
+      const bucket = next[week][sessionId];
+      if (name.trim() === "") delete bucket[exerciseIndex];
+      else bucket[exerciseIndex] = name;
       return next;
     });
-    saveOverride(week, sid, ex, name).catch(() => {});
+    saveOverride(week, sessionId, exerciseIndex, name).catch(() => {});
   }
 
   /**
@@ -282,14 +310,20 @@ export default function LiftPlan({
    */
   function weightAdjust(delta) {
     if (!weightEditor) return;
-    const cur =
+    const currentWeight =
       parseFloat(
-        logs[week][sid][weightEditor.ex].sets[weightEditor.set].weight
+        logs[week][sessionId][weightEditor.exerciseIndex].sets[
+          weightEditor.setIndex
+        ].weight
       ) || 0;
-    let nv = cur + delta;
-    if (nv < 0) nv = 0;
-    nv = Math.round(nv * 100) / 100;
-    applyWeight(weightEditor.ex, weightEditor.set, String(nv));
+    let newWeight = currentWeight + delta;
+    if (newWeight < 0) newWeight = 0;
+    newWeight = Math.round(newWeight * 100) / 100;
+    applyWeight(
+      weightEditor.exerciseIndex,
+      weightEditor.setIndex,
+      String(newWeight)
+    );
   }
 
   /**
@@ -298,84 +332,93 @@ export default function LiftPlan({
    */
   function weightType(value) {
     if (!weightEditor) return;
-    const v = value.replace(/[^0-9.]/g, "");
-    applyWeight(weightEditor.ex, weightEditor.set, v);
+    const sanitized = value.replace(/[^0-9.]/g, "");
+    applyWeight(weightEditor.exerciseIndex, weightEditor.setIndex, sanitized);
   }
 
   /** Pauses (freezing remaining) or resumes (re-anchoring endsAt) the timer. */
   function togglePause() {
-    setTimer((t) => {
-      if (!t) return t;
-      if (t.paused) {
-        return { ...t, paused: false, endsAt: Date.now() + t.remaining * 1000 };
+    setTimer((current) => {
+      if (!current) return current;
+      if (current.paused) {
+        return {
+          ...current,
+          paused: false,
+          endsAt: Date.now() + current.remaining * 1000,
+        };
       }
-      const remaining = getRemainingTimerDurationSeconds(t, Date.now());
-      return { ...t, paused: true, remaining };
+      const remaining = getRemainingTimerDurationSeconds(current, Date.now());
+      return { ...current, paused: true, remaining };
     });
   }
 
   /** Adds 30 seconds to the timer, keeping the ring within full. */
   function addTime() {
-    setTimer((t) => {
-      if (!t) return t;
-      const r = getRemainingTimerDurationSeconds(t, Date.now()) + 30;
-      const total = Math.max(t.total, r);
-      if (t.paused) return { ...t, remaining: r, total };
-      return { ...t, endsAt: Date.now() + r * 1000, total };
+    setTimer((current) => {
+      if (!current) return current;
+      const remaining =
+        getRemainingTimerDurationSeconds(current, Date.now()) + 30;
+      const total = Math.max(current.total, remaining);
+      if (current.paused) return { ...current, remaining, total };
+      return { ...current, endsAt: Date.now() + remaining * 1000, total };
     });
   }
 
   // ── Derived view data ──────────────────────────────────────────────
   const view = isWorkout
     ? deriveSessionView({
-        sess: SESSIONS[sid],
-        log: logs[week][sid],
+        session: SESSIONS[sessionId],
+        log: logs[week][sessionId],
         expanded,
         restCompound,
         restIso,
-        overrides: overrides[week][sid],
+        overrides: overrides[week][sessionId],
       })
     : null;
   const { restTitle, restNote } = isWorkout
     ? { restTitle: "", restNote: "" }
-    : restDayCopy(sid);
-  const pct = view ? view.pct : 0;
+    : restDayCopy(sessionId);
+  const percent = view ? view.percent : 0;
 
-  // Trigger celebration on the first render where pct reaches 100.
+  // Trigger celebration on the first render where percent reaches 100.
   useEffect(() => {
     if (!isWorkout) return;
-    const key = `${week}-${sid}`;
-    const previousCompletionPct = prevPctRef.current[key];
+    const key = `${week}-${sessionId}`;
+    const previousCompletionPercent = previousPercentRef.current[key];
     if (
-      pct === 100 &&
-      previousCompletionPct !== undefined &&
-      previousCompletionPct < 100 &&
+      percent === 100 &&
+      previousCompletionPercent !== undefined &&
+      previousCompletionPercent < 100 &&
       !celebratedRef.current.has(key)
     ) {
       celebratedRef.current.add(key);
-      setCelebrateSid(sid);
+      setCelebrateSessionId(sessionId);
     }
-    prevPctRef.current[key] = pct;
+    previousPercentRef.current[key] = percent;
   });
 
-  const runEntry = runLogs[week]?.[selectedIdx] ?? {
+  const runEntry = runLogs[week]?.[selectedDayIndex] ?? {
     distance: "",
     done: false,
   };
 
   let weightLabel = "";
-  let weightVal = "";
+  let weightValue = "";
   if (weightEditor && isWorkout) {
-    const override = overrides[week][sid][weightEditor.ex];
-    const exName =
+    const override = overrides[week][sessionId][weightEditor.exerciseIndex];
+    const exerciseName =
       override && override.trim() !== ""
         ? override.trim()
-        : sessEx[weightEditor.ex].n;
-    weightLabel = exName + " · Set " + (weightEditor.set + 1);
-    weightVal = logs[week][sid][weightEditor.ex].sets[weightEditor.set].weight;
+        : sessionExercises[weightEditor.exerciseIndex].name;
+    weightLabel = exerciseName + " · Set " + (weightEditor.setIndex + 1);
+    weightValue =
+      logs[week][sessionId][weightEditor.exerciseIndex].sets[
+        weightEditor.setIndex
+      ].weight;
   }
-  const incA = unit === "kg" ? [1.25, 2.5, 5, 10] : [2.5, 5, 10, 25];
-  const decA = unit === "kg" ? [2.5, 5, 10] : [5, 10, 25];
+  const weightIncrements =
+    unit === "kg" ? [1.25, 2.5, 5, 10] : [2.5, 5, 10, 25];
+  const weightDecrements = unit === "kg" ? [2.5, 5, 10] : [5, 10, 25];
 
   return (
     <div className={styles.page}>
@@ -388,7 +431,7 @@ export default function LiftPlan({
               <Button
                 variant="outlined"
                 className={styles.squareBtn}
-                onClick={() => setWeek((w) => clampWeek(w - 1))}
+                onClick={() => setWeek((current) => clampWeek(current - 1))}
                 aria-label="Previous week"
               >
                 ‹
@@ -399,7 +442,7 @@ export default function LiftPlan({
               <Button
                 variant="outlined"
                 className={styles.squareBtn}
-                onClick={() => setWeek((w) => clampWeek(w + 1))}
+                onClick={() => setWeek((current) => clampWeek(current + 1))}
                 aria-label="Next week"
               >
                 ›
@@ -424,8 +467,8 @@ export default function LiftPlan({
         )}
 
         <DayStrip
-          selectedIdx={selectedIdx}
-          todayIdx={todayIdx}
+          selectedDayIndex={selectedDayIndex}
+          todayDayIndex={todayDayIndex}
           onSelect={selectDay}
         />
 
@@ -441,19 +484,19 @@ export default function LiftPlan({
               <div className={styles.progressTrack}>
                 <div
                   className={styles.progressFill}
-                  style={{ width: pct + "%" }}
+                  style={{ width: percent + "%" }}
                 />
               </div>
             </div>
 
             <div className={styles.exList}>
-              {view.exercises.map((ex) => (
-                <React.Fragment key={ex.idx}>
-                  {ex.idx === view.appendixStart && (
+              {view.exercises.map((exercise) => (
+                <React.Fragment key={exercise.index}>
+                  {exercise.index === view.appendixStart && (
                     <div className={styles.appendixDivider}>Abs</div>
                   )}
                   <ExerciseCard
-                    ex={ex}
+                    exercise={exercise}
                     unit={unit}
                     onToggleExpand={toggleExpand}
                     onOpenWeight={setWeightEditor}
@@ -471,7 +514,7 @@ export default function LiftPlan({
         {/* State B — run / off day */}
         {!isWorkout && (
           <RestDayCard
-            sid={sid}
+            sessionId={sessionId}
             restTitle={restTitle}
             restNote={restNote}
             runEntry={runEntry}
@@ -495,10 +538,10 @@ export default function LiftPlan({
       {weightEditor && isWorkout && (
         <WeightEditor
           label={weightLabel}
-          value={weightVal}
+          value={weightValue}
           unit={unit}
-          incA={incA}
-          decA={decA}
+          weightIncrements={weightIncrements}
+          weightDecrements={weightDecrements}
           onAdjust={weightAdjust}
           onType={weightType}
           onClose={() => setWeightEditor(null)}
@@ -506,10 +549,10 @@ export default function LiftPlan({
       )}
 
       {/* Overlay 2 — session-complete celebration */}
-      {celebrateSid && (
+      {celebrateSessionId && (
         <WorkoutCelebration
-          sid={celebrateSid}
-          onDone={() => setCelebrateSid(null)}
+          sessionId={celebrateSessionId}
+          onDone={() => setCelebrateSessionId(null)}
         />
       )}
 
