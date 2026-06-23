@@ -104,10 +104,7 @@ export default function LiftPlan({ initialLogs, initialRunLogs }) {
   const sid = day.s;
   const isWorkout = sid !== "run" && sid !== "off";
   const sessEx = isWorkout
-    ? [
-        ...SESSIONS[sid].ex,
-        ...(SESSIONS[sid].appendix || []),
-      ]
+    ? [...SESSIONS[sid].ex, ...(SESSIONS[sid].appendix || [])]
     : [];
 
   /**
