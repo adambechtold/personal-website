@@ -117,3 +117,28 @@ export function buildLogs(savedRows = []) {
   rollSetsForward(logs);
   return logs;
 }
+
+/**
+ * Builds the in-memory exercise-name overrides: a structure keyed by week, then
+ * session id, then exercise index, holding the override name. Exercises without
+ * an override are simply absent, so a lookup falls back to the canonical name.
+ * @param {Array} [savedRows] - Override rows loaded from Postgres.
+ * @return {Object} The overrides keyed by week and session id.
+ */
+export function buildOverrides(savedRows = []) {
+  const overrides = {};
+  for (let week = 1; week <= PROGRAM_WEEKS; week++) {
+    overrides[week] = {};
+    for (const sessionId of Object.keys(SESSIONS)) {
+      overrides[week][sessionId] = {};
+    }
+  }
+  for (const row of savedRows) {
+    const bucket = overrides[row.week]?.[row.session_type];
+    if (!bucket) continue;
+    const name = row.name == null ? "" : String(row.name);
+    if (name.trim() === "") continue;
+    bucket[row.exercise_idx] = name;
+  }
+  return overrides;
+}

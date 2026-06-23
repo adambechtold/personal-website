@@ -15,6 +15,7 @@ import Check from "./Check";
  * @param {Function} props.onStepReps - (ex, set, delta) => void.
  * @param {Function} props.onInputReps - (ex, set, value) => void.
  * @param {Function} props.onToggleDone - (ex, set) => void.
+ * @param {Function} props.onRenameExercise - (idx, name) => void.
  * @return {React.ReactElement}
  */
 export default function ExerciseCard({
@@ -25,6 +26,7 @@ export default function ExerciseCard({
   onStepReps,
   onInputReps,
   onToggleDone,
+  onRenameExercise,
 }) {
   return (
     <Card className={styles.exCard}>
@@ -44,6 +46,9 @@ export default function ExerciseCard({
             {ex.name}
             {ex.sub && <span className={styles.exSub}> {ex.sub}</span>}
           </div>
+          {ex.originalName && (
+            <div className={styles.exOriginal}>{ex.originalName}</div>
+          )}
           <div className={styles.exTarget}>
             {ex.target} · rest {ex.rest}
           </div>
@@ -76,6 +81,26 @@ export default function ExerciseCard({
 
       {ex.open && (
         <div className={styles.exBody}>
+          <div className={styles.nameEditRow}>
+            <span className={styles.nameEditLabel}>Name</span>
+            <input
+              className={styles.nameEditInput}
+              value={ex.override}
+              placeholder={ex.baseName}
+              aria-label="Override exercise name"
+              onChange={(e) => onRenameExercise(ex.idx, e.target.value)}
+            />
+            {ex.override.trim() !== "" && (
+              <button
+                type="button"
+                className={styles.nameClearBtn}
+                onClick={() => onRenameExercise(ex.idx, "")}
+                aria-label="Clear name override"
+              >
+                Reset
+              </button>
+            )}
+          </div>
           <div className={styles.setColHead}>
             <span className={styles.colSet}>Set</span>
             <span className={styles.colWeight}>Weight · {unit}</span>
@@ -151,4 +176,5 @@ ExerciseCard.propTypes = {
   onStepReps: PropTypes.func.isRequired,
   onInputReps: PropTypes.func.isRequired,
   onToggleDone: PropTypes.func.isRequired,
+  onRenameExercise: PropTypes.func.isRequired,
 };
