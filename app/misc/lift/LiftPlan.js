@@ -5,8 +5,8 @@ import PropTypes from "prop-types";
 import styles from "./lift.module.css";
 import Button from "../../components/ui/Button";
 import { SESSIONS, WEEK, CONFIG } from "./data";
-import { buildLogs, buildOverrides } from "./logs";
-import { saveCells, saveRunLog, saveOverride } from "./actions";
+import { buildLogs, buildOverrides, buildSkips } from "./logs";
+import { saveCells, saveRunLog, saveOverride, saveSkip } from "./actions";
 import WorkoutCelebration from "./WorkoutCelebration";
 import {
   TIMER_KEY,
@@ -41,6 +41,7 @@ export default function LiftPlan({
   initialLogs,
   initialRunLogs,
   initialOverrides,
+  initialSkips,
 }) {
   const todayDayIndex = useMemo(() => todayIndex(), []);
 
@@ -52,6 +53,7 @@ export default function LiftPlan({
   const [overrides, setOverrides] = useState(() =>
     buildOverrides(initialOverrides)
   );
+  const [skips, setSkips] = useState(() => buildSkips(initialSkips));
   const [timer, setTimer] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [notesOpen, setNotesOpen] = useState(false);
@@ -305,6 +307,24 @@ export default function LiftPlan({
   }
 
   /**
+   * Toggles whether an exercise is skipped for the current week and session,
+   * persisting it. Skipping leaves any logged sets intact and drops the exercise
+   * out of the progress total, so a cut-short workout can still read as complete.
+   * @param {number} exerciseIndex - The exercise index.
+   */
+  function toggleSkip(exerciseIndex) {
+    const willSkip = !skips[week][sessionId][exerciseIndex];
+    setSkips((previous) => {
+      const next = structuredClone(previous);
+      const bucket = next[week][sessionId];
+      if (willSkip) bucket[exerciseIndex] = true;
+      else delete bucket[exerciseIndex];
+      return next;
+    });
+    saveSkip(week, sessionId, exerciseIndex, willSkip).catch(() => {});
+  }
+
+  /**
    * Applies a unit-aware increment chip to the open weight editor.
    * @param {number} delta - The amount to add (may be negative).
    */
@@ -373,6 +393,7 @@ export default function LiftPlan({
         restCompound,
         restIso,
         overrides: overrides[week][sessionId],
+        skips: skips[week][sessionId],
       })
     : null;
   const { restTitle, restNote } = isWorkout
@@ -504,6 +525,7 @@ export default function LiftPlan({
                     onInputReps={inputReps}
                     onToggleDone={toggleDone}
                     onRenameExercise={renameExercise}
+                    onToggleSkip={toggleSkip}
                   />
                 </React.Fragment>
               ))}
@@ -566,10 +588,12 @@ LiftPlan.propTypes = {
   initialLogs: PropTypes.array,
   initialRunLogs: PropTypes.array,
   initialOverrides: PropTypes.array,
+  initialSkips: PropTypes.array,
 };
 
 LiftPlan.defaultProps = {
   initialLogs: [],
   initialRunLogs: [],
   initialOverrides: [],
+  initialSkips: [],
 };

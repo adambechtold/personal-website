@@ -142,3 +142,26 @@ export function buildOverrides(savedRows = []) {
   }
   return overrides;
 }
+
+/**
+ * Builds the in-memory skipped-exercise markers: a structure keyed by week, then
+ * session id, then exercise index, holding `true` for each skipped exercise.
+ * Exercises that aren't skipped are simply absent, so a lookup is falsy.
+ * @param {Array} [savedRows] - Skip rows loaded from Postgres.
+ * @return {Object} The skips keyed by week and session id.
+ */
+export function buildSkips(savedRows = []) {
+  const skips = {};
+  for (let week = 1; week <= PROGRAM_WEEKS; week++) {
+    skips[week] = {};
+    for (const sessionId of Object.keys(SESSIONS)) {
+      skips[week][sessionId] = {};
+    }
+  }
+  for (const row of savedRows) {
+    const bucket = skips[row.week]?.[row.session_type];
+    if (!bucket) continue;
+    bucket[row.exercise_idx] = true;
+  }
+  return skips;
+}

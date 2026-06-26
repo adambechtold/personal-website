@@ -132,6 +132,86 @@ export async function saveOverride(week, sessionType, exerciseIndex, name) {
 }
 
 /**
+ * Creates the exercise-skip table if it doesn't exist. Each row marks one
+ * exercise as skipped for a given week + session, keyed by (week, session_type,
+ * exercise_idx). A missing row means the exercise is active (not skipped).
+ */
+export async function ensureSkipSchema() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS lift_exercise_skip (
+      week         INTEGER     NOT NULL,
+      session_type TEXT        NOT NULL,
+      exercise_idx INTEGER     NOT NULL,
+      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (week, session_type, exercise_idx)
+    )
+  `;
+}
+
+/**
+ * Loads every skipped-exercise marker.
+ * @return {Promise<Array>} The saved rows (only exercises that were skipped).
+ */
+export async function loadSkips() {
+  await requireAuth();
+  await ensureSkipSchema();
+  const { rows } = await sql`
+    SELECT week, session_type, exercise_idx
+    FROM lift_exercise_skip
+  `;
+  return rows;
+}
+
+/**
+ * Marks or unmarks an exercise as skipped. Skipping inserts the marker row;
+ * unskipping deletes it, so the exercise becomes active again exactly as if it
+ * was never skipped. Logged sets are left untouched either way.
+ * @param {number} week - Program week (1–PROGRAM_WEEKS).
+ * @param {string} sessionType - The session id.
+ * @param {number} exerciseIndex - The exercise index (main lifts + appendix).
+ * @param {boolean} skipped - Whether the exercise should be skipped.
+ */
+export async function saveSkip(week, sessionType, exerciseIndex, skipped) {
+  await requireAuth();
+  const weekNumber = parseInt(week, 10);
+  const sessionTypeStr = String(sessionType);
+  const parsedExerciseIndex = parseInt(exerciseIndex, 10);
+  if (
+    !Number.isInteger(weekNumber) ||
+    weekNumber < 1 ||
+    weekNumber > PROGRAM_WEEKS
+  )
+    return;
+  if (!VALID_SESSIONS.has(sessionTypeStr)) return;
+  const session = SESSIONS[sessionTypeStr];
+  const exerciseCount =
+    session.exercises.length + (session.appendix?.length || 0);
+  if (
+    !Number.isInteger(parsedExerciseIndex) ||
+    parsedExerciseIndex < 0 ||
+    parsedExerciseIndex >= exerciseCount
+  )
+    return;
+  await ensureSkipSchema();
+  if (!skipped) {
+    await sql`
+      DELETE FROM lift_exercise_skip
+      WHERE week = ${weekNumber}
+        AND session_type = ${sessionTypeStr}
+        AND exercise_idx = ${parsedExerciseIndex}
+    `;
+    return;
+  }
+  await sql`
+    INSERT INTO lift_exercise_skip
+      (week, session_type, exercise_idx, updated_at)
+    VALUES (${weekNumber}, ${sessionTypeStr}, ${parsedExerciseIndex}, now())
+    ON CONFLICT (week, session_type, exercise_idx)
+    DO UPDATE SET updated_at = now()
+  `;
+}
+
+/**
  * Creates the run-log table if it doesn't exist. Each row is one logged run,
  * keyed by (week, day_idx) to distinguish Wednesday and Saturday runs within
  * the same program week.

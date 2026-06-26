@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLogs, buildOverrides } from "./logs";
+import { buildLogs, buildOverrides, buildSkips } from "./logs";
 import { PROGRAM_WEEKS } from "./data";
 
 const SID = "upperA";
@@ -168,5 +168,46 @@ describe("buildOverrides", () => {
     const overrides = buildOverrides([overrideRow({ week: 1 })]);
     expect(overrides[1][SID][EX]).toBe("DB Bench");
     expect(overrides[2][SID][EX]).toBeUndefined();
+  });
+});
+
+/**
+ * @param {Object} overrides - Fields to override on the default skip row.
+ * @return {Object} A skip row for upperA / exercise 0.
+ */
+function skipRow(overrides) {
+  return {
+    week: 1,
+    session_type: SID,
+    exercise_idx: EX,
+    ...overrides,
+  };
+}
+
+describe("buildSkips", () => {
+  it("gives every week and session an empty bucket when nothing is saved", () => {
+    const skips = buildSkips();
+    for (let week = 1; week <= PROGRAM_WEEKS; week++) {
+      expect(skips[week][SID]).toEqual({});
+    }
+  });
+
+  it("marks a saved skip on its week/session/exercise", () => {
+    const skips = buildSkips([skipRow({})]);
+    expect(skips[1][SID][EX]).toBe(true);
+  });
+
+  it("scopes a skip to its own week", () => {
+    const skips = buildSkips([skipRow({ week: 1 })]);
+    expect(skips[1][SID][EX]).toBe(true);
+    expect(skips[2][SID][EX]).toBeUndefined();
+  });
+
+  it("ignores rows whose week or session is out of range", () => {
+    const skips = buildSkips([
+      skipRow({ week: 99 }),
+      skipRow({ session_type: "nope" }),
+    ]);
+    expect(skips[1][SID][EX]).toBeUndefined();
   });
 });

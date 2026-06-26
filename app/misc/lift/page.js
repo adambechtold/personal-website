@@ -1,6 +1,6 @@
 import React from "react";
 import LiftPlan from "./LiftPlan";
-import { loadLogs, loadRunLogs, loadOverrides } from "./actions";
+import { loadLogs, loadRunLogs, loadOverrides, loadSkips } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,16 +15,19 @@ export const metadata = {
  * @return {Promise<React.ReactElement>} The rendered page.
  */
 export default async function LiftPage() {
-  const [initialLogs, initialRunLogs, initialOverrides] = await Promise.all([
-    loadLogs(),
-    loadRunLogs(),
-    loadOverrides(),
-  ]);
+  const [initialLogs, initialRunLogs, initialOverrides, initialSkips] =
+    await Promise.all([
+      loadLogs(),
+      loadRunLogs(),
+      loadOverrides(),
+      loadSkips(),
+    ]);
   return (
     <LiftPlan
       initialLogs={initialLogs}
       initialRunLogs={initialRunLogs}
       initialOverrides={initialOverrides}
+      initialSkips={initialSkips}
     />
   );
 }
