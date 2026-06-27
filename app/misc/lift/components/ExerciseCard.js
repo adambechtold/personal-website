@@ -18,6 +18,7 @@ import Check from "./Check";
  * @param {Function} props.onInputReps - (exerciseIndex, setIndex, value) => void.
  * @param {Function} props.onToggleDone - (exerciseIndex, setIndex) => void.
  * @param {Function} props.onRenameExercise - (exerciseIndex, name) => void.
+ * @param {Function} props.onToggleSkip - (exerciseIndex) => void.
  * @return {React.ReactElement}
  */
 export default function ExerciseCard({
@@ -29,6 +30,7 @@ export default function ExerciseCard({
   onInputReps,
   onToggleDone,
   onRenameExercise,
+  onToggleSkip,
 }) {
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -91,17 +93,27 @@ export default function ExerciseCard({
       >
         <div
           className={`${styles.exBadge} ${
-            exercise.complete ? styles.exBadgeDone : ""
+            exercise.skipped
+              ? styles.exBadgeSkipped
+              : exercise.complete
+              ? styles.exBadgeDone
+              : ""
           }`}
         >
-          {exercise.complete ? (
+          {exercise.skipped ? (
+            "–"
+          ) : exercise.complete ? (
             <Check size={16} stroke="#fff" />
           ) : (
             exercise.index + 1
           )}
         </div>
         <div className={styles.exInfo}>
-          <div className={styles.exName}>
+          <div
+            className={`${styles.exName} ${
+              exercise.skipped ? styles.exNameSkipped : ""
+            }`}
+          >
             {exercise.name}
             {exercise.subLabel && (
               <span className={styles.exSub}> {exercise.subLabel}</span>
@@ -137,10 +149,14 @@ export default function ExerciseCard({
         <div className={styles.exRight}>
           <span
             className={`${styles.exProgress} ${
-              exercise.complete ? styles.exProgressDone : ""
+              exercise.skipped
+                ? styles.exProgressSkipped
+                : exercise.complete
+                ? styles.exProgressDone
+                : ""
             }`}
           >
-            {exercise.progress}
+            {exercise.skipped ? "Skipped" : exercise.progress}
           </span>
           <svg
             width="14"
@@ -190,7 +206,23 @@ export default function ExerciseCard({
         </div>
       )}
 
-      {exercise.open && (
+      {exercise.open && exercise.skipped && (
+        <div className={styles.exBody}>
+          <div className={styles.skipNotice}>
+            Skipped this week — it’s left out of your progress. Anything you
+            already logged is kept.
+          </div>
+          <button
+            type="button"
+            className={styles.restoreBtn}
+            onClick={() => onToggleSkip(exercise.index)}
+          >
+            Restore exercise
+          </button>
+        </div>
+      )}
+
+      {exercise.open && !exercise.skipped && (
         <div className={styles.exBody}>
           <div className={styles.setColHead}>
             <span className={styles.colSet}>Set</span>
@@ -259,6 +291,13 @@ export default function ExerciseCard({
               </button>
             </div>
           ))}
+          <button
+            type="button"
+            className={styles.skipBtn}
+            onClick={() => onToggleSkip(exercise.index)}
+          >
+            Skip this exercise
+          </button>
         </div>
       )}
     </Card>
@@ -274,4 +313,5 @@ ExerciseCard.propTypes = {
   onInputReps: PropTypes.func.isRequired,
   onToggleDone: PropTypes.func.isRequired,
   onRenameExercise: PropTypes.func.isRequired,
+  onToggleSkip: PropTypes.func.isRequired,
 };

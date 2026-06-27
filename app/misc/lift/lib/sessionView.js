@@ -10,6 +10,7 @@
  * @param {number} args.restCompound - Compound rest seconds (for time estimate).
  * @param {number} args.restIso - Isolation rest seconds (for time estimate).
  * @param {Object} [args.overrides] - Map of exercise index to override name.
+ * @param {Object} [args.skips] - Map of exercise index to `true` when skipped.
  * @return {{exercises: Array, title: string, lean: string, meta: string,
  *   percent: number}} The workout view model.
  */
@@ -20,18 +21,27 @@ export function deriveSessionView({
   restCompound,
   restIso,
   overrides = {},
+  skips = {},
 }) {
   const mainExerciseCount = session.exercises.length;
   const allExercises = [...session.exercises, ...(session.appendix || [])];
+  // The full plan, used for the meta line.
   let totalSets = 0;
-  let doneSets = 0;
   let estimatedSeconds = 0;
+  // Only the active (non-skipped) exercises, used for the progress percent so a
+  // cut-short workout still reaches 100% once the lifts you kept are logged.
+  let activeSets = 0;
+  let activeDoneSets = 0;
   const exercises = allExercises.map((exercise, index) => {
     const doneSetCount = log[index].sets.filter((set) => set.done).length;
+    const skipped = !!skips[index];
     totalSets += exercise.sets;
-    doneSets += doneSetCount;
     estimatedSeconds +=
       exercise.sets * (40 + (exercise.type === "c" ? restCompound : restIso));
+    if (!skipped) {
+      activeSets += exercise.sets;
+      activeDoneSets += doneSetCount;
+    }
     const complete = doneSetCount === exercise.sets;
     const override = overrides[index] ?? "";
     const hasOverride = override.trim() !== "";
@@ -47,6 +57,7 @@ export function deriveSessionView({
       open: expanded === index,
       progress: doneSetCount + "/" + exercise.sets,
       complete,
+      skipped,
       placeholder: exercise.repLow + "–" + exercise.repHigh,
       sets: log[index].sets,
       isAppendix: index >= mainExerciseCount,
@@ -56,6 +67,14 @@ export function deriveSessionView({
     5,
     Math.round(estimatedSeconds / 60 / 5) * 5
   );
+  // With no active sets left, the session is either fully skipped (treat as
+  // resolved → 100%) or genuinely empty (0%).
+  let percent;
+  if (activeSets) {
+    percent = Math.round((activeDoneSets / activeSets) * 100);
+  } else {
+    percent = totalSets ? 100 : 0;
+  }
   return {
     exercises,
     title: session.title,
@@ -67,7 +86,7 @@ export function deriveSessionView({
       " sets · ~" +
       estimatedMinutes +
       " min",
-    percent: totalSets ? Math.round((doneSets / totalSets) * 100) : 0,
+    percent,
     appendixStart: session.appendix?.length ? mainExerciseCount : null,
   };
 }

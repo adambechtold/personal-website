@@ -922,3 +922,56 @@
   line-height: 1.55;
   color: #555;
 }
+
+/* Skipped exercise — muted badge, struck name, and the skip/restore controls */
+.exBadgeSkipped {
+  background: #eef1f7;
+  color: var(--faint);
+}
+
+.exNameSkipped {
+  text-decoration: line-through;
+  text-decoration-color: var(--faint);
+  color: var(--muted);
+}
+
+.exProgressSkipped {
+  color: var(--muted);
+}
+
+.skipNotice {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--muted);
+  padding: 4px 4px 12px;
+}
+
+.skipBtn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 0;
+  background: transparent;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.restoreBtn {
+  display: block;
+  width: 100%;
+  padding: 9px 0;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-input);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
