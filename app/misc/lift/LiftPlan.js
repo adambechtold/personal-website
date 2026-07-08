@@ -20,6 +20,7 @@ import {
   todayIndex,
 } from "./lib/schedule";
 import { deriveSessionView, restDayCopy } from "./lib/sessionView";
+import { platePresetForUnit } from "./lib/plates";
 import DayStrip from "./components/DayStrip";
 import ExerciseCard from "./components/ExerciseCard";
 import RestDayCard from "./components/RestDayCard";
@@ -419,6 +420,7 @@ export default function LiftPlan({
   const weightIncrements =
     unit === "kg" ? [1.25, 2.5, 5, 10] : [2.5, 5, 10, 25];
   const weightDecrements = unit === "kg" ? [2.5, 5, 10] : [5, 10, 25];
+  const plateConfig = platePresetForUnit(unit);
 
   return (
     <div className={styles.page}>
@@ -542,6 +544,7 @@ export default function LiftPlan({
           unit={unit}
           weightIncrements={weightIncrements}
           weightDecrements={weightDecrements}
+          plateConfig={plateConfig}
           onAdjust={weightAdjust}
           onType={weightType}
           onClose={() => setWeightEditor(null)}

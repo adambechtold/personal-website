@@ -810,6 +810,73 @@
   color: var(--muted);
 }
 
+/* ── Plate calculator ───────────────────────────────────────────── */
+
+.plateToggleRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.plateBox {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-card);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+}
+
+.plateEyebrow {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 9px;
+}
+
+.plateList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: center;
+}
+
+.platePill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  border: 1px solid var(--accent-border);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.platePillTimes {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.plateHint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+}
+
+.plateRemainder {
+  margin-top: 9px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+}
+
 .chipRow {
   display: flex;
   gap: 8px;
