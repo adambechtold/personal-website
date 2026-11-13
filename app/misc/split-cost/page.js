@@ -25,7 +25,7 @@ export default function SplitCostIndexPage() {
               href={`/misc/split-cost/${trip.slug}`}
               className={styles.tripLink}
             >
-              <Card>
+              <Card className={styles.tripCard}>
                 <div className={styles.tripName}>
                   {trip.emoji} {trip.name}
                 </div>
