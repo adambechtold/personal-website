@@ -20,6 +20,7 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
+    "/misc",
     "/misc/lift",
     "/misc/lift/:path*",
     "/misc/split-cost",

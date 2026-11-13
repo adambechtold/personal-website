@@ -35,7 +35,7 @@ export default function Home() {
             <Education />
           </ContentItem>
           <div className={styles.footer}>
-            <Link href="/misc/lift" className={styles.toolsLink}>
+            <Link href="/misc" className={styles.toolsLink}>
               Tools
             </Link>
           </div>

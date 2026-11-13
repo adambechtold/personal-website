@@ -1,0 +1,50 @@
+.page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.toolList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toolLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.toolCard {
+  padding: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.toolLink:hover .toolCard {
+  border-color: var(--accent-border);
+}
+
+.toolName {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.toolDescription {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
