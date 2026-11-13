@@ -24,7 +24,7 @@ function safeDestination(from) {
   ) {
     return from;
   }
-  return "/misc/lift";
+  return "/misc";
 }
 
 /**
