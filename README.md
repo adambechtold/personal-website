@@ -28,3 +28,9 @@ Notes:
 - Changing `APP_PASSWORD` only affects new sign-ins; existing sessions stay valid
   until they expire (90 days) or you rotate `AUTH_SECRET`.
 - Sign out by visiting `/logout`.
+- **Preview deployments are read-only without the password.** When
+  `VERCEL_ENV` is `preview`, the middleware lets you view the tools and the
+  load actions return data without a session. Anything that writes (`save*`,
+  `addExpense`, `updateExpense`, `deleteExpense`) still requires signing in.
+  This relies on Vercel Deployment Protection (Vercel Authentication) staying
+  on for previews — if you turn it off, preview data becomes publicly readable.

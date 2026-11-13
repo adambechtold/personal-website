@@ -9,6 +9,16 @@ export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 90; // 90 days
 const encoder = new TextEncoder();
 
 /**
+ * Whether this is a Vercel preview deployment. Previews already sit behind
+ * Vercel Authentication (Deployment Protection), so they skip the app password
+ * for reads — writes still need a signed-in session.
+ * @return {boolean} True on a preview deployment.
+ */
+export function isPreviewDeployment() {
+  return process.env.VERCEL_ENV === "preview";
+}
+
+/**
  * @return {string} The HMAC signing secret.
  * @throws {Error} If AUTH_SECRET is not configured.
  */

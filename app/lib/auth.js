@@ -1,5 +1,11 @@
 import { cookies } from "next/headers";
-import { COOKIE_NAME, SESSION_TTL_MS, signToken, verifyToken } from "./session";
+import {
+  COOKIE_NAME,
+  SESSION_TTL_MS,
+  isPreviewDeployment,
+  signToken,
+  verifyToken,
+} from "./session";
 
 /**
  * @return {Promise<boolean>} Whether the current request carries a valid
@@ -18,6 +24,17 @@ export async function isAuthenticated() {
  */
 export async function requireAuth() {
   if (!(await isAuthenticated())) throw new Error("Unauthorized");
+}
+
+/**
+ * Guards a read-only server action. On preview deployments reads are open
+ * (Vercel Authentication already gates the deployment); everywhere else this
+ * behaves like requireAuth. Never use it for anything that writes.
+ * @throws {Error} If the request is unauthenticated outside a preview.
+ */
+export async function requireReadAccess() {
+  if (isPreviewDeployment()) return;
+  await requireAuth();
 }
 
 /** Issues a signed session cookie for the current response. */

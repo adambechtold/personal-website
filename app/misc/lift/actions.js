@@ -2,7 +2,7 @@
 
 import { sql } from "@vercel/postgres";
 import { SESSIONS, WEEK } from "./data";
-import { requireAuth } from "../../lib/auth";
+import { requireAuth, requireReadAccess } from "../../lib/auth";
 import { normalizeCell } from "./lib/normalizeCell";
 
 const VALID_SESSIONS = new Set(Object.keys(SESSIONS));
@@ -40,7 +40,7 @@ export async function ensureSchema() {
  * @return {Promise<Array>} The saved rows (only cells that have been written).
  */
 export async function loadLogs() {
-  await requireAuth();
+  await requireReadAccess();
   await ensureSchema();
   const { rows } = await sql`
     SELECT week, session_type, exercise_idx, set_idx, weight, reps, done
@@ -72,7 +72,7 @@ export async function ensureOverrideSchema() {
  * @return {Promise<Array>} The saved rows (only exercises that were renamed).
  */
 export async function loadOverrides() {
-  await requireAuth();
+  await requireReadAccess();
   await ensureOverrideSchema();
   const { rows } = await sql`
     SELECT week, session_type, exercise_idx, name
@@ -154,7 +154,7 @@ async function ensureRunSchema() {
  * @return {Promise<Array>} The saved rows.
  */
 export async function loadRunLogs() {
-  await requireAuth();
+  await requireReadAccess();
   await ensureRunSchema();
   const { rows } = await sql`
     SELECT week, day_idx, distance, done
