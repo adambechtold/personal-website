@@ -5,12 +5,13 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import ExpenseForm from "./ExpenseForm";
 import { computePortions } from "../calc";
+import { personName } from "../trips";
 import { formatCurrency, formatDate, toDateString } from "../lib/format";
 
 /**
  * Sorts and filters the expenses for display.
  * @param {Array} expenses - All expenses.
- * @param {string} filterUser - "all" | "adam" | "matt".
+ * @param {string} filterUser - "all" or the id of the person who paid.
  * @param {{field: string, direction: string}} sort - Sort field and direction.
  * @return {Array} The visible, ordered expenses.
  */
@@ -42,6 +43,7 @@ function selectVisible(expenses, filterUser, sort) {
  * The expenses section: payer filter, sort controls, and the list of expense
  * cards (each either a read-only summary or an inline edit form).
  * @param {Object} props
+ * @param {Object} props.trip - The trip (people and currencies).
  * @param {Array} props.expenses - All expenses.
  * @param {number|null} props.editId - Id of the expense being edited.
  * @param {Object|null} props.editForm - The edit form state.
@@ -54,6 +56,7 @@ function selectVisible(expenses, filterUser, sort) {
  * @return {React.ReactElement}
  */
 export default function ExpenseList({
+  trip,
   expenses,
   editId,
   editForm,
@@ -78,8 +81,7 @@ export default function ExpenseList({
         <div className={styles.pillRow}>
           {[
             ["all", "All"],
-            ["adam", "Adam"],
-            ["matt", "Matt"],
+            ...trip.people.map((person) => [person.id, person.name]),
           ].map(([value, label]) => (
             <Button
               key={value}
@@ -127,7 +129,7 @@ export default function ExpenseList({
         <p className={styles.empty}>No expenses yet.</p>
       )}
       {visibleExpenses.map((expense) => {
-        const { adamPortion, mattPortion } = computePortions(expense);
+        const portions = computePortions(expense);
         const rate = parseFloat(expense.rate_to_base) || 1;
         const currency = expense.currency || "USD";
         const isUSD = currency === "USD";
@@ -136,7 +138,11 @@ export default function ExpenseList({
           <Card key={expense.id} className={styles.expenseCard}>
             {isEditing ? (
               <form onSubmit={onUpdate} className={styles.expenseForm}>
-                <ExpenseForm form={editForm} setForm={setEditForm} />
+                <ExpenseForm
+                  trip={trip}
+                  form={editForm}
+                  setForm={setEditForm}
+                />
                 <div className={styles.editActions}>
                   <Button
                     variant="primary"
@@ -164,7 +170,7 @@ export default function ExpenseList({
                     </span>
                     <span className={styles.expenseMeta}>
                       {formatDate(expense.expense_date)} ·{" "}
-                      {expense.paid_by === "adam" ? "Adam" : "Matt"} paid{" "}
+                      {personName(trip, expense.paid_by)} paid{" "}
                       {isUSD
                         ? formatCurrency(parseFloat(expense.amount), "USD")
                         : `${formatCurrency(
@@ -177,7 +183,7 @@ export default function ExpenseList({
                     </span>
                     {!isUSD && (
                       <span className={styles.rateNote}>
-                        1 {currency} = ${rate.toFixed(4)} on{" "}
+                        1 {currency} = ${rate.toFixed(rate < 0.1 ? 6 : 4)} on{" "}
                         {formatDate(toDateString(expense.rate_date))}
                       </span>
                     )}
@@ -203,8 +209,12 @@ export default function ExpenseList({
                   </div>
                 </div>
                 <div className={styles.expensePortions}>
-                  <span>Adam: {formatCurrency(adamPortion * rate, "USD")}</span>
-                  <span>Matt: {formatCurrency(mattPortion * rate, "USD")}</span>
+                  {trip.people.map((person) => (
+                    <span key={person.id}>
+                      {person.name}:{" "}
+                      {formatCurrency((portions[person.id] || 0) * rate, "USD")}
+                    </span>
+                  ))}
                 </div>
               </>
             )}
@@ -216,6 +226,7 @@ export default function ExpenseList({
 }
 
 ExpenseList.propTypes = {
+  trip: PropTypes.object.isRequired,
   expenses: PropTypes.arrayOf(PropTypes.object).isRequired,
   editId: PropTypes.number,
   editForm: PropTypes.object,

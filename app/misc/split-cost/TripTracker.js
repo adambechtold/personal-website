@@ -2,59 +2,87 @@
 
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import Link from "next/link";
 import styles from "./split-cost.module.css";
 import Button from "../../components/ui/Button";
 import { addExpense, updateExpense, deleteExpense } from "./actions";
-import { computeSettlement } from "./calc";
+import { computeSettlement, computeTransfers } from "./calc";
+import { personName } from "./trips";
 import { TODAY, toDateString } from "./lib/format";
 import SettlementSummary from "./components/SettlementSummary";
 import ExpenseForm from "./components/ExpenseForm";
 import ExpenseList from "./components/ExpenseList";
 
-const EMPTY_FORM = {
-  description: "",
-  amount: "",
-  expense_date: TODAY,
-  paid_by: "adam",
-  currency: "USD",
-  adam_shares: "1",
-  matt_shares: "1",
-  adam_adjustment: "0",
-  matt_adjustment: "0",
-};
-
 /**
- * Builds the settlement headline for the summary card.
- * @param {number} adamNet - Adam's net balance.
- * @return {string} The "who owes whom" line.
+ * Builds the blank add-expense form for a trip: an even split between
+ * everyone, paid by the first person, in the trip's first currency.
+ * @param {Object} trip - The trip.
+ * @return {Object} The empty form state.
  */
-function settlementLineFor(adamNet) {
-  if (Math.abs(adamNet) < 0.01) return "All settled up 🎉";
-  if (adamNet > 0) return `Matt owes Adam $${adamNet.toFixed(2)}`;
-  return `Adam owes Matt $${(-adamNet).toFixed(2)}`;
+function emptyFormFor(trip) {
+  const splits = {};
+  for (const person of trip.people) {
+    splits[person.id] = { shares: "1", adjustment: "0" };
+  }
+  return {
+    description: "",
+    amount: "",
+    expense_date: TODAY,
+    paid_by: trip.people[0].id,
+    currency: trip.currencies[0],
+    splits,
+  };
 }
 
 /**
- * Trip tracker client component for the Ireland trip. Owns form + edit state
- * and the expense mutations; delegates rendering to the settlement summary,
- * add form, and expense list.
- * @param {{initialExpenses: Array}} props
+ * Builds the settlement headline lines for the summary card.
+ * @param {Object} trip - The trip.
+ * @param {Array<{from: string, to: string, amount: number}>} transfers -
+ *   Payments that settle the trip, from computeTransfers.
+ * @return {Array<string>} One "who owes whom" line per payment.
+ */
+function settlementLinesFor(trip, transfers) {
+  if (transfers.length === 0) return ["All settled up 🎉"];
+  return transfers.map(
+    (transfer) =>
+      `${personName(trip, transfer.from)} owes ${personName(
+        trip,
+        transfer.to
+      )} $${transfer.amount.toFixed(2)}`
+  );
+}
+
+/**
+ * Trip tracker client component. Owns form + edit state and the expense
+ * mutations; delegates rendering to the settlement summary, add form, and
+ * expense list.
+ * @param {{trip: Object, initialExpenses: Array}} props
  * @return {React.ReactElement}
  */
-export default function TripTracker({ initialExpenses }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+export default function TripTracker({ trip, initialExpenses }) {
+  const [form, setForm] = useState(() => emptyFormFor(trip));
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [pending, setPending] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("trip-person");
-    if (saved === "adam" || saved === "matt")
-      setForm((previous) => ({ ...previous, paid_by: saved }));
-  }, []);
+  const personIds = trip.people.map((person) => person.id);
+  const rememberedPayerKey = `trip-person-${trip.slug}`;
 
-  const settlement = computeSettlement(initialExpenses);
-  const settlementLine = settlementLineFor(settlement.adamNet);
+  useEffect(() => {
+    // Fall back to the key used before trips existed, so the remembered payer
+    // survives the move to per-trip keys.
+    const saved =
+      localStorage.getItem(rememberedPayerKey) ||
+      localStorage.getItem("trip-person");
+    if (trip.people.some((person) => person.id === saved))
+      setForm((previous) => ({ ...previous, paid_by: saved }));
+  }, [trip, rememberedPayerKey]);
+
+  const settlement = computeSettlement(initialExpenses, personIds);
+  const settlementLines = settlementLinesFor(
+    trip,
+    computeTransfers(settlement)
+  );
 
   /**
    * Handles add-expense form submission.
@@ -64,7 +92,7 @@ export default function TripTracker({ initialExpenses }) {
     event.preventDefault();
     setPending(true);
     try {
-      await addExpense(form);
+      await addExpense(trip.slug, form);
       window.location.reload();
     } catch (error) {
       alert("Failed to add expense: " + error.message);
@@ -80,7 +108,7 @@ export default function TripTracker({ initialExpenses }) {
     event.preventDefault();
     setPending(true);
     try {
-      await updateExpense(editId, editForm);
+      await updateExpense(trip.slug, editId, editForm);
       window.location.reload();
     } catch (error) {
       alert("Failed to update expense: " + error.message);
@@ -96,7 +124,7 @@ export default function TripTracker({ initialExpenses }) {
     if (!confirm("Delete this expense?")) return;
     setPending(true);
     try {
-      await deleteExpense(id);
+      await deleteExpense(trip.slug, id);
       window.location.reload();
     } catch (error) {
       alert("Failed to delete expense: " + error.message);
@@ -109,6 +137,14 @@ export default function TripTracker({ initialExpenses }) {
    * @param {Object} expense - Expense row.
    */
   function startEdit(expense) {
+    const splits = {};
+    for (const person of trip.people) {
+      const split = (expense.splits || {})[person.id] || {};
+      splits[person.id] = {
+        shares: (parseInt(split.shares) || 0).toString(),
+        adjustment: (parseFloat(split.adjustment) || 0).toString(),
+      };
+    }
     setEditId(expense.id);
     setEditForm({
       paid_by: expense.paid_by,
@@ -118,23 +154,26 @@ export default function TripTracker({ initialExpenses }) {
       currency: expense.currency || "USD",
       rate_to_base: parseFloat(expense.rate_to_base),
       rate_date: toDateString(expense.rate_date),
-      adam_shares: expense.adam_shares.toString(),
-      matt_shares: expense.matt_shares.toString(),
-      adam_adjustment: parseFloat(expense.adam_adjustment).toString(),
-      matt_adjustment: parseFloat(expense.matt_adjustment).toString(),
+      splits,
     });
   }
 
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <h1 className={styles.title}>🇮🇪 Ireland Trip</h1>
+        <Link href="/misc/split-cost" className={styles.backLink}>
+          ← All trips
+        </Link>
+        <h1 className={styles.title}>
+          {trip.emoji} {trip.name}
+        </h1>
 
         {/* Settlement Summary */}
         <div className={styles.section}>
           <SettlementSummary
+            trip={trip}
             settlement={settlement}
-            settlementLine={settlementLine}
+            settlementLines={settlementLines}
           />
         </div>
 
@@ -142,7 +181,14 @@ export default function TripTracker({ initialExpenses }) {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Add Expense</h2>
           <form onSubmit={handleAdd} className={styles.expenseForm}>
-            <ExpenseForm form={form} setForm={setForm} />
+            <ExpenseForm
+              trip={trip}
+              form={form}
+              setForm={setForm}
+              onPayerPicked={(personId) =>
+                localStorage.setItem(rememberedPayerKey, personId)
+              }
+            />
             <Button
               variant="primary"
               type="submit"
@@ -156,6 +202,7 @@ export default function TripTracker({ initialExpenses }) {
 
         {/* Expense List */}
         <ExpenseList
+          trip={trip}
           expenses={initialExpenses}
           editId={editId}
           editForm={editForm}
@@ -172,5 +219,6 @@ export default function TripTracker({ initialExpenses }) {
 }
 
 TripTracker.propTypes = {
+  trip: PropTypes.object.isRequired,
   initialExpenses: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
