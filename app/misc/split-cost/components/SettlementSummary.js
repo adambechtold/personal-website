@@ -4,15 +4,26 @@ import styles from "../split-cost.module.css";
 import Card from "../../../components/ui/Card";
 
 /**
- * The settlement summary card: the headline "who owes whom" line plus the
+ * The settlement summary card: the headline "who owes whom" lines plus the
  * per-person paid / share / net breakdown.
- * @param {{settlement: Object, settlementLine: string}} props
+ * @param {{trip: Object, settlement: Object, settlementLines: Array<string>}}
+ *   props
  * @return {React.ReactElement}
  */
-export default function SettlementSummary({ settlement, settlementLine }) {
+export default function SettlementSummary({
+  trip,
+  settlement,
+  settlementLines,
+}) {
   return (
     <Card accent className={styles.settlement}>
-      <div className={styles.settlementLine}>{settlementLine}</div>
+      <div className={styles.settlementLines}>
+        {settlementLines.map((settlementLine) => (
+          <div key={settlementLine} className={styles.settlementLine}>
+            {settlementLine}
+          </div>
+        ))}
+      </div>
       <div className={styles.settlementBreakdown}>
         <div className={`${styles.settlementRow} ${styles.settlementHeader}`}>
           <span></span>
@@ -20,36 +31,31 @@ export default function SettlementSummary({ settlement, settlementLine }) {
           <span>Share</span>
           <span>Net</span>
         </div>
-        <div className={styles.settlementRow}>
-          <span>Adam</span>
-          <span>${settlement.adamPaid.toFixed(2)}</span>
-          <span>${settlement.adamOwed.toFixed(2)}</span>
-          <span
-            className={
-              settlement.adamNet >= 0 ? styles.positive : styles.negative
-            }
-          >
-            {settlement.adamNet >= 0 ? "+" : ""}${settlement.adamNet.toFixed(2)}
-          </span>
-        </div>
-        <div className={styles.settlementRow}>
-          <span>Matt</span>
-          <span>${settlement.mattPaid.toFixed(2)}</span>
-          <span>${settlement.mattOwed.toFixed(2)}</span>
-          <span
-            className={
-              settlement.mattNet >= 0 ? styles.positive : styles.negative
-            }
-          >
-            {settlement.mattNet >= 0 ? "+" : ""}${settlement.mattNet.toFixed(2)}
-          </span>
-        </div>
+        {trip.people.map((person) => {
+          const totals = settlement[person.id];
+          // Round first so a sub-cent negative net doesn't render as "$-0.00".
+          const netCents = Math.round(totals.net * 100);
+          return (
+            <div key={person.id} className={styles.settlementRow}>
+              <span>{person.name}</span>
+              <span>${totals.paid.toFixed(2)}</span>
+              <span>${totals.owed.toFixed(2)}</span>
+              <span
+                className={netCents >= 0 ? styles.positive : styles.negative}
+              >
+                {netCents >= 0 ? "+" : "-"}$
+                {(Math.abs(netCents) / 100).toFixed(2)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </Card>
   );
 }
 
 SettlementSummary.propTypes = {
+  trip: PropTypes.object.isRequired,
   settlement: PropTypes.object.isRequired,
-  settlementLine: PropTypes.string.isRequired,
+  settlementLines: PropTypes.arrayOf(PropTypes.string).isRequired,
 };

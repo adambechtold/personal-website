@@ -5,21 +5,40 @@ import Button from "../../../components/ui/Button";
 import { computePortions } from "../calc";
 import { formatCurrency } from "../lib/format";
 
-const CURRENCIES = ["USD", "EUR"];
-
-const CURRENCY_FLAGS = { USD: "🇺🇸", EUR: "🇪🇺" };
+const CURRENCY_FLAGS = { USD: "🇺🇸", EUR: "🇪🇺", PHP: "🇵🇭" };
 
 /**
  * The expense field set shared by both the add and edit forms: amount,
  * currency, description, payer, date, and the per-person shares/adjustments
  * grid with a live cost preview.
- * @param {{form: Object, setForm: Function}} props
+ * @param {Object} props
+ * @param {Object} props.trip - The trip (people and currencies).
+ * @param {Object} props.form - The form state.
+ * @param {Function} props.setForm - Form state setter.
+ * @param {Function} [props.onPayerPicked] - (personId) => void, called when
+ *   the payer is chosen by hand.
  * @return {React.ReactElement}
  */
-export default function ExpenseForm({ form, setForm }) {
+export default function ExpenseForm({ trip, form, setForm, onPayerPicked }) {
   const currency = form.currency || "USD";
-  const { adamPortion: adamCost, mattPortion: mattCost } =
-    computePortions(form);
+  const portions = computePortions(form);
+
+  /**
+   * Updates one field of one person's split.
+   * @param {string} personId - Whose split to change.
+   * @param {string} field - "shares" or "adjustment".
+   * @param {string} value - The new input value.
+   */
+  function setSplitField(personId, field, value) {
+    setForm({
+      ...form,
+      splits: {
+        ...form.splits,
+        [personId]: { ...form.splits[personId], [field]: value },
+      },
+    });
+  }
+
   return (
     <>
       <div className={styles.formRow}>
@@ -44,7 +63,7 @@ export default function ExpenseForm({ form, setForm }) {
       <div className={styles.formRow}>
         <label className={styles.label}>Currency</label>
         <div className={styles.pillRow}>
-          {CURRENCIES.map((currencyCode) => (
+          {trip.currencies.map((currencyCode) => (
             <Button
               key={currencyCode}
               type="button"
@@ -52,7 +71,7 @@ export default function ExpenseForm({ form, setForm }) {
               active={currency === currencyCode}
               onClick={() => setForm({ ...form, currency: currencyCode })}
             >
-              {CURRENCY_FLAGS[currencyCode]} {currencyCode}
+              {CURRENCY_FLAGS[currencyCode] || ""} {currencyCode}
             </Button>
           ))}
         </div>
@@ -73,18 +92,18 @@ export default function ExpenseForm({ form, setForm }) {
       <div className={styles.formRow}>
         <label className={styles.label}>Paid by</label>
         <div className={styles.pillRow}>
-          {["adam", "matt"].map((person) => (
+          {trip.people.map((person) => (
             <Button
-              key={person}
+              key={person.id}
               type="button"
               variant="pill"
-              active={form.paid_by === person}
+              active={form.paid_by === person.id}
               onClick={() => {
-                setForm({ ...form, paid_by: person });
-                localStorage.setItem("trip-person", person);
+                setForm({ ...form, paid_by: person.id });
+                if (onPayerPicked) onPayerPicked(person.id);
               }}
             >
-              {person === "adam" ? "Adam" : "Matt"}
+              {person.name}
             </Button>
           ))}
         </div>
@@ -101,65 +120,62 @@ export default function ExpenseForm({ form, setForm }) {
           required
         />
       </div>
-      <div className={styles.sharesGrid}>
+      <div
+        className={styles.sharesGrid}
+        style={{
+          gridTemplateColumns: `auto repeat(${trip.people.length}, minmax(0, 1fr))`,
+        }}
+      >
         <div />
-        <div className={styles.sharesColHeader}>Adam</div>
-        <div className={styles.sharesColHeader}>Matt</div>
+        {trip.people.map((person) => (
+          <div key={person.id} className={styles.sharesColHeader}>
+            {person.name}
+          </div>
+        ))}
         <div className={styles.sharesRowLabel}>Shares</div>
-        <input
-          className={`${styles.input} ${styles.inputSm}`}
-          type="number"
-          min="0"
-          step="1"
-          value={form.adam_shares}
-          onChange={(event) =>
-            setForm({ ...form, adam_shares: event.target.value })
-          }
-        />
-        <input
-          className={`${styles.input} ${styles.inputSm}`}
-          type="number"
-          min="0"
-          step="1"
-          value={form.matt_shares}
-          onChange={(event) =>
-            setForm({ ...form, matt_shares: event.target.value })
-          }
-        />
+        {trip.people.map((person) => (
+          <input
+            key={person.id}
+            className={`${styles.input} ${styles.inputSm}`}
+            type="number"
+            min="0"
+            step="1"
+            aria-label={`${person.name} shares`}
+            value={form.splits[person.id].shares}
+            onChange={(event) =>
+              setSplitField(person.id, "shares", event.target.value)
+            }
+          />
+        ))}
         <div className={styles.sharesRowLabel}>+/-</div>
-        <input
-          className={`${styles.input} ${styles.inputSm}`}
-          type="number"
-          step="0.01"
-          placeholder="0"
-          value={form.adam_adjustment}
-          onChange={(event) =>
-            setForm({ ...form, adam_adjustment: event.target.value })
-          }
-        />
-        <input
-          className={`${styles.input} ${styles.inputSm}`}
-          type="number"
-          step="0.01"
-          placeholder="0"
-          value={form.matt_adjustment}
-          onChange={(event) =>
-            setForm({ ...form, matt_adjustment: event.target.value })
-          }
-        />
+        {trip.people.map((person) => (
+          <input
+            key={person.id}
+            className={`${styles.input} ${styles.inputSm}`}
+            type="number"
+            step="0.01"
+            placeholder="0"
+            aria-label={`${person.name} adjustment`}
+            value={form.splits[person.id].adjustment}
+            onChange={(event) =>
+              setSplitField(person.id, "adjustment", event.target.value)
+            }
+          />
+        ))}
         <div className={styles.sharesRowLabel}>Cost</div>
-        <div className={styles.sharesCostValue}>
-          {formatCurrency(adamCost, currency)}
-        </div>
-        <div className={styles.sharesCostValue}>
-          {formatCurrency(mattCost, currency)}
-        </div>
+        {trip.people.map((person) => (
+          <div key={person.id} className={styles.sharesCostValue}>
+            {formatCurrency(portions[person.id] || 0, currency)}
+          </div>
+        ))}
       </div>
     </>
   );
 }
 
 ExpenseForm.propTypes = {
+  trip: PropTypes.object.isRequired,
+  onPayerPicked: PropTypes.func,
   form: PropTypes.object.isRequired,
   setForm: PropTypes.func.isRequired,
 };

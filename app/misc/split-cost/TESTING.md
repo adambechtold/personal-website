@@ -1,8 +1,12 @@
 # Split-Cost — Testing Charter
 
-Split-cost (the "🇮🇪 Ireland Trip" tracker) handles **financial data**: it records who
-paid for what, splits each expense between two people (Adam & Matt), converts
+Split-cost (the trip expense tracker) handles **financial data**: it records who
+paid for what, splits each expense between the people on a trip, converts
 foreign-currency expenses to USD, and tells a human **who owes whom how much**.
+
+Trips are hard-coded in `trips.js` (Ireland: Adam & Matt; Manila: Adam, Adela, Tia &
+Chris). Every expense row belongs to one trip (`trip` column) and carries a `splits`
+JSON object with each person's `shares` and `adjustment`.
 Some of that must always be correct; some of it is cosmetic. This document is the
 contract for what we test and why.
 
@@ -19,13 +23,13 @@ The existing `npm test` (format + lint + build) is unchanged and still gates com
 
 ## The two prime invariants (everything in Tier 1 serves these)
 
-1. **Per-expense conservation** — for any single expense,
-   `adamPortion + mattPortion === amount` (in the expense's transaction currency).
+1. **Per-expense conservation** — for any single expense, everyone's portions sum
+   to `amount` (in the expense's transaction currency).
    This holds whenever total shares > 0, which `validate()` now enforces at persist
    time. If it ever breaks, a row silently allocates money to nobody.
 
-2. **Zero-sum settlement** — across all expenses, `adamNet + mattNet === 0`.
-   One person's surplus is exactly the other's deficit. Money is never created or
+2. **Zero-sum settlement** — across all of a trip's expenses, everyone's nets sum
+   to 0. One person's surplus is exactly the others' deficit. Money is never created or
    destroyed. This follows from invariant #1 holding for every row.
 
 If you change anything in `calc.js` or `actions.js`, these two must still hold.
@@ -35,7 +39,9 @@ If you change anything in `calc.js` or `actions.js`, these two must still hold.
 ## Tier 1 — Mission-critical: money correctness
 
 **Scope:** `app/misc/split-cost/calc.js` (pure functions: `computePortions`,
-`computeSettlement`). No DB, no network, no React.
+`computeSettlement`, `computeTransfers`). No DB, no network, no React. The rows
+below are written in two-person (Adam & Matt) terms; the same conditions must hold
+for any number of people, and the test file covers a four-person trip too.
 **Test file:** `app/misc/split-cost/calc.test.js` (a golden example already exists —
 copy its style).
 
@@ -48,6 +54,7 @@ copy its style).
 | 1.5 | Re-running settlement on the same rows yields the same USD result (rates are frozen, not recomputed)                                    |
 | 1.6 | Adjustments are carve-outs: conservation holds when `adj > amount`, when adjustments are negative, and when they sum to the full amount |
 | 1.7 | Rounding policy: reconciling many odd splits (repeated `$0.01` 1:1, 1:2 splits) must not leak cents                                     |
+| 1.8 | `computeTransfers` payments bring every person's balance to exactly zero (in cents); no payments when everyone is within a cent         |
 
 ## Tier 2 — Data integrity: bad data in ⇒ bad math later
 
@@ -58,12 +65,14 @@ copy its style).
 | #   | Condition                                                                                                       |
 | --- | --------------------------------------------------------------------------------------------------------------- |
 | 2.1 | A failed rate fetch (timeout, non-200, bad shape) **throws and aborts the insert** — nothing is persisted       |
-| 2.2 | `validate` rejects: `paid_by ∉ {adam, matt}`, `amount ≤ 0`/NaN, missing date, negative shares                   |
+| 2.2 | `validate` rejects: `paid_by` not on the trip, `amount ≤ 0`/NaN, missing date, negative shares, unknown trip    |
 | 2.3 | `validate` rejects total shares ≤ 0 (regression guard for the conservation fix)                                 |
 | 2.4 | `addExpense`/`updateExpense` derive the stored rate from currency + date; USD ⇒ rate 1, non-USD ⇒ fetched rate  |
 | 2.5 | Editing an expense never leaves a stale rate (changing currency/date re-derives the rate)                       |
 | 2.6 | All DB writes stay parameterized (`sql\`\`` tagged templates) — no string-built SQL                             |
 | 2.7 | `ensureSchema` is idempotent; the legacy backfill (USD / rate 1 / rate_date = expense_date) never corrupts rows |
+| 2.8 | Expenses are scoped to their trip: reads, updates, and deletes always filter by `trip`                          |
+| 2.9 | The `splits` backfill copies the legacy `adam_*` / `matt_*` columns exactly and only touches rows without one   |
 
 ## Tier 3 — Important, but degradation not money-loss
 
@@ -72,18 +81,18 @@ exists (default `node` environment). For DOM tests, install
 `jsdom` + `@testing-library/react` and opt into a DOM per-file with a docblock at
 the top of the test file: `// @vitest-environment jsdom`. Do not add a second config.
 
-| #   | Condition                                                                    |
-| --- | ---------------------------------------------------------------------------- |
-| 3.1 | Empty expense list ⇒ all zeros + "All settled up", no `NaN`                  |
-| 3.2 | Filter-by-user changes only what's displayed, never the settlement totals    |
-| 3.3 | The in-form "Cost" preview matches `computePortions` for the same inputs     |
-| 3.4 | Settlement line text matches the sign of `adamNet` (uses the 1.3 thresholds) |
+| #   | Condition                                                                 |
+| --- | ------------------------------------------------------------------------- |
+| 3.1 | Empty expense list ⇒ all zeros + "All settled up", no `NaN`               |
+| 3.2 | Filter-by-user changes only what's displayed, never the settlement totals |
+| 3.3 | The in-form "Cost" preview matches `computePortions` for the same inputs  |
+| 3.4 | Settlement lines match `computeTransfers` (who pays whom, 1.3 thresholds) |
 
 ---
 
 ## Out of scope (fine to be wrong for now)
 
-- Auth / per-user identity; `paid_by` is a hardcoded two-person enum on purpose.
+- Auth / per-user identity; trips and their people are hard-coded in `trips.js` on purpose.
 - Visual/UX: styling, flags/emoji, date formatting, settlement wording, the
   `localStorage` "remember last payer" convenience.
 - Concurrency / last-write-wins on simultaneous edits (low risk at two users).

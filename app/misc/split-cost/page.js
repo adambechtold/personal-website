@@ -1,30 +1,42 @@
 import React from "react";
-import { sql } from "@vercel/postgres";
-import TripTracker from "./TripTracker";
-import { ensureSchema } from "./actions";
-
-export const dynamic = "force-dynamic";
+import Link from "next/link";
+import styles from "./split-cost.module.css";
+import Card from "../../components/ui/Card";
+import { TRIPS } from "./trips";
 
 export const metadata = {
-  title: "Ireland Trip",
-  description: "Ireland trip expense tracker for Adam and Matt.",
+  title: "Trips",
+  description: "Trip expense trackers.",
 };
 
 /**
- * Ireland trip tracker page — fetches all expenses and renders the tracker.
- * @return {Promise<React.ReactElement>} The rendered page.
+ * Split-cost index — lists every trip and links to its tracker.
+ * @return {React.ReactElement} The rendered page.
  */
-export default async function SplitCostPage() {
-  await ensureSchema();
-  const { rows } = await sql`
-    SELECT * FROM expenses ORDER BY expense_date DESC, id DESC
-  `;
-  const expenses = rows.map((row) => ({
-    ...row,
-    expense_date:
-      row.expense_date instanceof Date
-        ? row.expense_date.toISOString().slice(0, 10)
-        : String(row.expense_date).slice(0, 10),
-  }));
-  return <TripTracker initialExpenses={expenses} />;
+export default function SplitCostIndexPage() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <h1 className={styles.title}>Trips</h1>
+        <div className={styles.tripList}>
+          {TRIPS.map((trip) => (
+            <Link
+              key={trip.slug}
+              href={`/misc/split-cost/${trip.slug}`}
+              className={styles.tripLink}
+            >
+              <Card>
+                <div className={styles.tripName}>
+                  {trip.emoji} {trip.name}
+                </div>
+                <div className={styles.tripPeople}>
+                  {trip.people.map((person) => person.name).join(", ")}
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
