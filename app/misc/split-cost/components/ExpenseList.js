@@ -183,7 +183,7 @@ export default function ExpenseList({
                     </span>
                     {!isUSD && (
                       <span className={styles.rateNote}>
-                        1 {currency} = ${rate.toFixed(4)} on{" "}
+                        1 {currency} = ${rate.toFixed(rate < 0.1 ? 6 : 4)} on{" "}
                         {formatDate(toDateString(expense.rate_date))}
                       </span>
                     )}

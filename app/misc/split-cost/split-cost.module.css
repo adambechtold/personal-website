@@ -288,9 +288,25 @@
   white-space: nowrap;
 }
 
+.sharesGrid .inputSm {
+  min-width: 0;
+  padding: 0.4rem 0.15rem;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Spinner arrows eat most of a narrow column; the fields are typed into. */
+.sharesGrid .inputSm::-webkit-outer-spin-button,
+.sharesGrid .inputSm::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .sharesCostValue {
   text-align: center;
-  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--ink);
   border-top: 1px solid var(--border);

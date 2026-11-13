@@ -111,6 +111,10 @@ export function computeSettlement(expenses, personIds) {
  * everyone up: repeatedly, the person who owes the most pays the person who is
  * owed the most. Works in whole cents; balances under one cent are ignored.
  *
+ * Rounding each person's net to the cent independently can leave the rounded
+ * balances a cent or two away from summing to zero. That residue is folded
+ * into the largest balance so the payments always settle every balance.
+ *
  * @param {Object<string, {net: number}>} settlement - From computeSettlement.
  * @return {Array<{from: string, to: string, amount: number}>} Payments in USD.
  */
@@ -119,6 +123,16 @@ export function computeTransfers(settlement) {
     personId,
     cents: Math.round(totals.net * 100),
   }));
+  const residueCents = balances.reduce(
+    (total, balance) => total + balance.cents,
+    0
+  );
+  if (residueCents !== 0) {
+    const largest = balances.reduce((current, balance) =>
+      Math.abs(balance.cents) > Math.abs(current.cents) ? balance : current
+    );
+    largest.cents -= residueCents;
+  }
   const transfers = [];
   for (;;) {
     let debtor = null;

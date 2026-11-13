@@ -280,8 +280,8 @@ describe("computePortions", () => {
 
 describe("computeSettlement", () => {
   it("should return all zeros for an empty expense list", () => {
-    const s = twoPersonSettlement([]);
-    expect(s).toEqual({
+    const settlement = twoPersonSettlement([]);
+    expect(settlement).toEqual({
       adamPaid: 0,
       mattPaid: 0,
       adamOwed: 0,
@@ -312,11 +312,11 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
+    const settlement = twoPersonSettlement(expenses);
     // Adam paid 100, owes 70; Matt paid 40, owes 70. Matt owes Adam 30.
-    expect(s.adamNet).toBeCloseTo(30, 10);
-    expect(s.mattNet).toBeCloseTo(-30, 10);
-    expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
+    expect(settlement.adamNet).toBeCloseTo(30, 10);
+    expect(settlement.mattNet).toBeCloseTo(-30, 10);
+    expect(settlement.adamNet + settlement.mattNet).toBeCloseTo(0, 10);
   });
 
   it("should convert each expense to USD using its own rate_to_base", () => {
@@ -331,10 +331,10 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(s.mattPaid).toBeCloseTo(55, 10); // 50 * 1.1
-    expect(s.adamOwed).toBeCloseTo(27.5, 10);
-    expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.mattPaid).toBeCloseTo(55, 10); // 50 * 1.1
+    expect(settlement.adamOwed).toBeCloseTo(27.5, 10);
+    expect(settlement.adamNet + settlement.mattNet).toBeCloseTo(0, 10);
   });
 
   it("should remain zero-sum across a mixed-currency expense list", () => {
@@ -359,9 +359,9 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
-    expect(s.adamNet).toBeCloseTo(-s.mattNet, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.adamNet + settlement.mattNet).toBeCloseTo(0, 10);
+    expect(settlement.adamNet).toBeCloseTo(-settlement.mattNet, 10);
   });
 
   it("should return a positive adamNet when Adam overpaid so Matt owes Adam", () => {
@@ -377,9 +377,9 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(s.adamNet).toBeGreaterThan(0);
-    expect(s.adamNet).toBeCloseTo(50, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.adamNet).toBeGreaterThan(0);
+    expect(settlement.adamNet).toBeCloseTo(50, 10);
   });
 
   it("should return a negative adamNet when Matt overpaid so Adam owes Matt", () => {
@@ -395,9 +395,9 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(s.adamNet).toBeLessThan(0);
-    expect(s.adamNet).toBeCloseTo(-50, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.adamNet).toBeLessThan(0);
+    expect(settlement.adamNet).toBeCloseTo(-50, 10);
   });
 
   it("should return adamNet within the settled threshold when expenses exactly balance", () => {
@@ -422,8 +422,8 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(Math.abs(s.adamNet)).toBeLessThan(0.01);
+    const settlement = twoPersonSettlement(expenses);
+    expect(Math.abs(settlement.adamNet)).toBeLessThan(0.01);
   });
 
   it("should apply each expense's own rate_to_base independently", () => {
@@ -448,9 +448,9 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(s.adamPaid).toBeCloseTo(200, 10);
-    expect(s.mattPaid).toBeCloseTo(50, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.adamPaid).toBeCloseTo(200, 10);
+    expect(settlement.mattPaid).toBeCloseTo(50, 10);
   });
 
   it("should pass a USD expense through unchanged with rate 1", () => {
@@ -465,10 +465,10 @@ describe("computeSettlement", () => {
         matt_adjustment: "0",
       },
     ];
-    const s = twoPersonSettlement(expenses);
-    expect(s.adamPaid).toBeCloseTo(75, 10); // 75 * 1 = 75, unchanged
-    expect(s.adamOwed).toBeCloseTo(37.5, 10);
-    expect(s.mattOwed).toBeCloseTo(37.5, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.adamPaid).toBeCloseTo(75, 10); // 75 * 1 = 75, unchanged
+    expect(settlement.adamOwed).toBeCloseTo(37.5, 10);
+    expect(settlement.mattOwed).toBeCloseTo(37.5, 10);
   });
 
   it("should produce identical results when run twice on the same expense rows", () => {
@@ -515,9 +515,9 @@ describe("computeSettlement", () => {
       adam_adjustment: "0",
       matt_adjustment: "0",
     }));
-    const s = twoPersonSettlement(expenses);
-    expect(s.adamNet + s.mattNet).toBeCloseTo(0, 10);
-    expect(s.adamNet).toBeCloseTo(0.0, 10);
+    const settlement = twoPersonSettlement(expenses);
+    expect(settlement.adamNet + settlement.mattNet).toBeCloseTo(0, 10);
+    expect(settlement.adamNet).toBeCloseTo(0.0, 10);
   });
 });
 
@@ -691,6 +691,30 @@ describe("computeTransfers", () => {
     expect(
       computeTransfers({ adam: { net: -12.34 }, matt: { net: 12.34 } })
     ).toEqual([{ from: "adam", to: "matt", amount: 12.34 }]);
+  });
+
+  it("should stay zero-sum when independently rounded nets do not sum to zero", () => {
+    // Each net rounds to the cent on its own, so the rounded balances can be a
+    // cent away from summing to zero; the payments must still net out.
+    const transfers = computeTransfers({
+      adam: { net: 10.006 },
+      adela: { net: 5.006 },
+      tia: { net: 1.006 },
+      chris: { net: -16.018 },
+    });
+    const flowCents = { adam: 0, adela: 0, tia: 0, chris: 0 };
+    for (const transfer of transfers) {
+      flowCents[transfer.from] -= Math.round(transfer.amount * 100);
+      flowCents[transfer.to] += Math.round(transfer.amount * 100);
+    }
+    expect(sumValues(flowCents)).toBe(0);
+    // Every creditor is paid their full rounded balance.
+    expect(flowCents).toEqual({
+      adam: 1001,
+      adela: 501,
+      tia: 101,
+      chris: -1603,
+    });
   });
 
   it("should bring every balance to zero", () => {

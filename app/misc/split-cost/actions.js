@@ -13,10 +13,14 @@ import { findTrip } from "./trips";
  * Phase-3 columns support multiple trips: `trip` scopes a row to a trip slug
  * (legacy rows are all Ireland), and `splits` holds every person's shares and
  * adjustment as JSON (`{"adam": {"shares": 1, "adjustment": 0}, ...}`),
- * backfilled from the legacy two-person adam_/matt_ columns. Those legacy
- * columns are kept but no longer read or written.
+ * backfilled from the legacy two-person adam_/matt_ columns.
+ *
+ * `splits` is deliberately left nullable: a deployment of the older two-person
+ * code inserts rows without it, and the backfill picks those up. The legacy
+ * columns are still written (see legacySplitColumns) so that older code keeps
+ * reading correct Adam/Matt splits, but `splits` is the only source of truth.
  */
-export async function ensureSchema() {
+async function migrateSchema() {
   await sql`
     CREATE TABLE IF NOT EXISTS expenses (
       id              SERIAL PRIMARY KEY,
@@ -49,7 +53,26 @@ export async function ensureSchema() {
     )
     WHERE splits IS NULL
   `;
-  await sql`ALTER TABLE expenses ALTER COLUMN splits SET NOT NULL`;
+  await sql`ALTER TABLE expenses ALTER COLUMN splits DROP NOT NULL`;
+}
+
+// The in-flight or completed migration for this server instance.
+let schemaReady = null;
+
+/**
+ * Ensures the expenses table exists and is migrated. The migration runs once
+ * per server instance rather than before every query; a failed run is
+ * forgotten so the next call retries it.
+ * @return {Promise<void>}
+ */
+export async function ensureSchema() {
+  if (!schemaReady) {
+    schemaReady = migrateSchema().catch((error) => {
+      schemaReady = null;
+      throw error;
+    });
+  }
+  return schemaReady;
 }
 
 /**
@@ -119,6 +142,24 @@ function parseExpense(trip, data) {
 }
 
 /**
+ * Derives values for the legacy two-person columns from an expense's splits,
+ * so a deployment of the older code still reads the right Adam/Matt split.
+ * People who are not on the trip get zero shares.
+ * @param {Object} splits - Parsed splits by person id.
+ * @return {Object} adamShares, mattShares, adamAdjustment, mattAdjustment.
+ */
+function legacySplitColumns(splits) {
+  const adam = splits.adam || { shares: 0, adjustment: 0 };
+  const matt = splits.matt || { shares: 0, adjustment: 0 };
+  return {
+    adamShares: adam.shares,
+    mattShares: matt.shares,
+    adamAdjustment: adam.adjustment,
+    mattAdjustment: matt.adjustment,
+  };
+}
+
+/**
  * Validates parsed expense input and throws on invalid data.
  * @param {Object} trip - The trip the expense belongs to.
  * @param {Object} expense - Parsed expense from parseExpense.
@@ -165,16 +206,18 @@ export async function addExpense(tripSlug, data) {
     currency === "USD"
       ? { rateToBase: 1, rateDate: expenseDate }
       : await fetchRate(currency, expenseDate);
+  const slug = trip.slug;
+  const splitsJson = JSON.stringify(expense.splits);
+  const legacy = legacySplitColumns(expense.splits);
   await ensureSchema();
   await sql`
     INSERT INTO expenses
       (trip, paid_by, amount, description, expense_date, currency, rate_to_base, rate_date,
-       splits)
+       splits, adam_shares, matt_shares, adam_adjustment, matt_adjustment)
     VALUES
-      (${
-        trip.slug
-      }, ${paidBy}, ${amount}, ${description}, ${expenseDate}, ${currency}, ${rateToBase}, ${rateDate},
-       ${JSON.stringify(expense.splits)}::jsonb)
+      (${slug}, ${paidBy}, ${amount}, ${description}, ${expenseDate}, ${currency}, ${rateToBase}, ${rateDate},
+       ${splitsJson}::jsonb, ${legacy.adamShares}, ${legacy.mattShares},
+       ${legacy.adamAdjustment}, ${legacy.mattAdjustment})
   `;
   revalidatePath(`/misc/split-cost/${trip.slug}`);
 }
@@ -197,8 +240,9 @@ export async function updateExpense(tripSlug, id, data) {
     currency === "USD"
       ? { rateToBase: 1, rateDate: expenseDate }
       : await fetchRate(currency, expenseDate);
+  const legacy = legacySplitColumns(expense.splits);
   await ensureSchema();
-  await sql`
+  const { rowCount } = await sql`
     UPDATE expenses SET
       paid_by         = ${paidBy},
       amount          = ${amount},
@@ -207,9 +251,16 @@ export async function updateExpense(tripSlug, id, data) {
       currency        = ${currency},
       rate_to_base    = ${rateToBase},
       rate_date       = ${rateDate},
-      splits          = ${JSON.stringify(expense.splits)}::jsonb
+      splits          = ${JSON.stringify(expense.splits)}::jsonb,
+      adam_shares     = ${legacy.adamShares},
+      matt_shares     = ${legacy.mattShares},
+      adam_adjustment = ${legacy.adamAdjustment},
+      matt_adjustment = ${legacy.mattAdjustment}
     WHERE id = ${id} AND trip = ${trip.slug}
   `;
+  if (rowCount === 0) {
+    throw new Error("Expense not found — it may have been deleted.");
+  }
   revalidatePath(`/misc/split-cost/${trip.slug}`);
 }
 
@@ -222,6 +273,10 @@ export async function deleteExpense(tripSlug, id) {
   await requireAuth();
   const trip = requireTrip(tripSlug);
   await ensureSchema();
-  await sql`DELETE FROM expenses WHERE id = ${id} AND trip = ${trip.slug}`;
+  const { rowCount } =
+    await sql`DELETE FROM expenses WHERE id = ${id} AND trip = ${trip.slug}`;
+  if (rowCount === 0) {
+    throw new Error("Expense not found — it may have already been deleted.");
+  }
   revalidatePath(`/misc/split-cost/${trip.slug}`);
 }

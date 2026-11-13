@@ -4,7 +4,10 @@
  * Each trip has its own URL (`/misc/split-cost/<slug>`), its own set of people,
  * and the currencies offered in its expense form. Expenses are stored in one
  * shared `expenses` table and scoped to a trip by its slug, so a slug must
- * never be changed once a trip has expenses.
+ * never be changed once a trip has expenses. The same goes for people: stored
+ * expenses reference person ids, so never rename or remove a person from a
+ * trip that has expenses (their payments and portions would silently drop out
+ * of the settlement). Adding a person is safe.
  *
  * To add a trip, add an entry here — no schema change is needed.
  */

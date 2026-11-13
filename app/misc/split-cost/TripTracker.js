@@ -69,7 +69,11 @@ export default function TripTracker({ trip, initialExpenses }) {
   const rememberedPayerKey = `trip-person-${trip.slug}`;
 
   useEffect(() => {
-    const saved = localStorage.getItem(rememberedPayerKey);
+    // Fall back to the key used before trips existed, so the remembered payer
+    // survives the move to per-trip keys.
+    const saved =
+      localStorage.getItem(rememberedPayerKey) ||
+      localStorage.getItem("trip-person");
     if (trip.people.some((person) => person.id === saved))
       setForm((previous) => ({ ...previous, paid_by: saved }));
   }, [trip, rememberedPayerKey]);
