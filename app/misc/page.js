@@ -17,6 +17,12 @@ const TOOLS = [
     description: "Workout plan and set logging.",
   },
   {
+    href: "/misc/scrabble",
+    emoji: "🔤",
+    name: "Scrabble",
+    description: "Scorekeeper with editable move history.",
+  },
+  {
     href: "/misc/split-cost",
     emoji: "💸",
     name: "Split Cost",
