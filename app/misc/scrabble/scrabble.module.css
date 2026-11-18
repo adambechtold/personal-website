@@ -1,0 +1,630 @@
+.page {
+  min-height: 100vh;
+  padding: 1.25rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: var(--ink);
+}
+
+.backLink {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 0.6rem;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.emptyText,
+.mutedText {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.errorText {
+  font-size: 0.85rem;
+  color: var(--negative);
+  margin: 0 0 0.6rem;
+}
+
+/* ── Game list ──────────────────────────────────────────────────── */
+
+.gameList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.gameLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.gameCard {
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.gameLink:hover .gameCard {
+  border-color: var(--accent-border);
+}
+
+.gameCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.gameName {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.gameDate {
+  font-size: 0.78rem;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.gameScores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.gameScore strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ── New game form ──────────────────────────────────────────────── */
+
+.newGameCard {
+  padding: 1rem;
+}
+
+.newGameForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: #666;
+}
+
+.input,
+form .input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-size: 16px; /* 16px keeps iOS from zooming in on focus */
+  font-family: inherit;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  outline: none;
+  margin-bottom: 0.85rem;
+  background: #fff;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.fullWidthButton {
+  width: 100%;
+  padding: 0.7rem 1rem;
+}
+
+/* ── Game page header ───────────────────────────────────────────── */
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.saveStatus {
+  font-size: 0.78rem;
+  color: var(--muted);
+  min-height: 1rem;
+}
+
+.retryButton {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--negative);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gameTitle {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 0.85rem;
+}
+
+/* ── Scoreboard ─────────────────────────────────────────────────── */
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: repeat(var(--player-count, 2), minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 0.4rem 0;
+  background: rgb(var(--background-rgb));
+}
+
+.scoreCell {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+  background: #fff;
+  min-width: 0;
+}
+
+.scoreCellCurrent {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.scorePlayer {
+  font-size: 0.85rem;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scoreTotal {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.scoreUpNext {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.crown {
+  font-size: 0.85rem;
+}
+
+/* ── Move history ───────────────────────────────────────────────── */
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.round {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.roundTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--faint);
+  margin: 0;
+}
+
+.turnRow {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.turnRow:hover,
+.turnRow:focus-visible {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.turnRowEditing {
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-card);
+  background: var(--accent-soft);
+  padding: 0.75rem;
+}
+
+.turnPlayer {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.turnPlayerName {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.turnRunningTotal {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.turnWords {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  min-width: 0;
+}
+
+.turnWord {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.passText {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--faint);
+}
+
+.bingoBadge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--positive);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  padding: 0.05rem 0.4rem;
+}
+
+.turnScore {
+  font-size: 1.05rem;
+  font-weight: 700;
+  min-width: 2rem;
+  text-align: right;
+}
+
+/* ── Tiles ──────────────────────────────────────────────────────── */
+
+.tile {
+  --tile-face: #f2d7a0;
+  --tile-face-dark: #dfb56f;
+  --tile-edge: #b98a45;
+  --tile-ink: #3b2a14;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--tile-edge);
+  border-radius: 4px;
+  background: linear-gradient(
+    145deg,
+    var(--tile-face) 0%,
+    var(--tile-face-dark) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.12),
+    0 1px 1px rgba(0, 0, 0, 0.18);
+  color: var(--tile-ink);
+  font-family: inherit;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.tileLetter {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tileValue {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tileSmall {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 3px;
+}
+
+.tileSmall .tileLetter {
+  font-size: 0.85rem;
+}
+
+.tileSmall .tileValue {
+  font-size: 0.45rem;
+  right: 2px;
+  bottom: 1px;
+}
+
+.tileButton {
+  cursor: pointer;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.tileButton:active {
+  transform: translateY(1px);
+}
+
+.doubleLetter {
+  --tile-face: #d3ecfa;
+  --tile-face-dark: #9fd3f0;
+  --tile-edge: #6bb1d8;
+}
+
+.tripleLetter {
+  --tile-face: #4f8fd6;
+  --tile-face-dark: #2a63a8;
+  --tile-edge: #1d4a82;
+  --tile-ink: #fff;
+}
+
+.doubleWord {
+  --tile-face: #fbd3df;
+  --tile-face-dark: #f3a6bd;
+  --tile-edge: #d8799a;
+}
+
+.tripleWord {
+  --tile-face: #f2785a;
+  --tile-face-dark: #d9472a;
+  --tile-edge: #a9341d;
+  --tile-ink: #fff;
+}
+
+.blank {
+  opacity: 0.55;
+  border-style: dashed;
+  border-width: 1.5px;
+  box-shadow: none;
+}
+
+/* ── Turn editor ────────────────────────────────────────────────── */
+
+.nextTurnCard {
+  padding: 0.9rem;
+}
+
+.turnEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.editorTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.editorTotal {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.wordEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.wordInputRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input.wordInput,
+form .input.wordInput {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.wordScore {
+  min-width: 1.75rem;
+  text-align: right;
+  font-weight: 600;
+  color: #555;
+}
+
+.removeWordButton {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font-size: 1rem;
+  padding: 0.4rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.removeWordButton:hover {
+  color: var(--negative);
+}
+
+.tileRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.editorOptions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bingoLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+}
+
+.checkbox,
+form .checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.legendHint {
+  width: 100%;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Tint variables come from the bonus class (e.g. .doubleLetter). */
+.legendSwatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 2px;
+  border: 1px solid var(--tile-edge, #b98a45);
+  background: linear-gradient(
+    145deg,
+    var(--tile-face, #f2d7a0) 0%,
+    var(--tile-face-dark, #dfb56f) 100%
+  );
+}
+
+.editorActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editorActions > * {
+  padding: 0.7rem 1rem;
+}
+
+.growButton {
+  flex: 1;
+}
+
+.deleteTurnRow,
+.deleteGameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deleteGameRow {
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  color: var(--negative);
+}
+
+.dangerButton {
+  border: 1px solid var(--negative);
+  color: var(--negative);
+}

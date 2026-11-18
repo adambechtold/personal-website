@@ -23,6 +23,8 @@ export const config = {
     "/misc",
     "/misc/lift",
     "/misc/lift/:path*",
+    "/misc/scrabble",
+    "/misc/scrabble/:path*",
     "/misc/split-cost",
     "/misc/split-cost/:path*",
   ],
