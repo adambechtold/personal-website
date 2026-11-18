@@ -13,7 +13,13 @@ import {
   tilesFromText,
   wordText,
 } from "./scoring";
-import { SEED_GAME, parseShorthandWord, parseShorthandTurn } from "./seedGame";
+import {
+  SEED_GAME,
+  LUIS_ADAM_ADELA_GAME,
+  SEED_GAMES,
+  parseShorthandWord,
+  parseShorthandTurn,
+} from "./seedGame";
 
 /**
  * Builds a word from shorthand for terser tests.
@@ -115,6 +121,30 @@ describe("seed game", () => {
       score: 54,
       runningTotal: 138,
     });
+  });
+});
+
+describe("luis, adam & adela seed game", () => {
+  it("matches the score sheet: luis 40, adam 12, adela 19", () => {
+    expect(playerTotals(LUIS_ADAM_ADELA_GAME)).toEqual([40, 12, 19]);
+    expect(
+      buildRounds(LUIS_ADAM_ADELA_GAME).flatMap((round) =>
+        round.entries.map((entry) => entry.score)
+      )
+    ).toEqual([16, 12, 19, 24]);
+  });
+
+  it("has adam up next", () => {
+    expect(
+      LUIS_ADAM_ADELA_GAME.players[currentPlayerIndex(LUIS_ADAM_ADELA_GAME)]
+    ).toBe("adam");
+  });
+});
+
+describe("SEED_GAMES", () => {
+  it("has unique keys", () => {
+    const keys = SEED_GAMES.map((seed) => seed.key);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
 
