@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { normalizeGame, parsePlayerList } from "./normalizeGame";
-import { SEED_GAME } from "./seedGame";
+import { SEED_GAMES } from "./seedGame";
 
 describe("normalizeGame", () => {
-  it("leaves a clean game unchanged", () => {
-    expect(normalizeGame(SEED_GAME)).toEqual(SEED_GAME);
+  it("leaves every seed game unchanged", () => {
+    for (const seed of SEED_GAMES) {
+      expect(normalizeGame(seed.game)).toEqual(seed.game);
+    }
   });
 
   it("requires at least 1 player", () => {

@@ -5,18 +5,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAuth } from "../../lib/auth";
 import { normalizeGame, parsePlayerList } from "./lib/normalizeGame";
-import { SEED_GAME } from "./lib/seedGame";
+import { SEED_GAMES } from "./lib/seedGame";
 
 /**
- * Creates the games table if it doesn't exist. One row per game; every edit
- * overwrites `state` with the whole game. When the table is created for the
- * first time, the in-progress seed game is inserted (only if the table is
- * still empty, so two instances racing to create it can't both seed it).
+ * Creates the games table and the seed ledger if they don't exist, then
+ * inserts any seed game that hasn't been inserted before. One row per game;
+ * every edit overwrites `state` with the whole game.
+ *
+ * `scrabble_seeds` records each seed key once it has been inserted, so a seed
+ * goes in exactly once: it isn't duplicated by racing instances and doesn't
+ * come back after the game is deleted.
  */
 async function migrateSchema() {
-  const { rows } =
-    await sql`SELECT to_regclass('scrabble_games') AS existing_table`;
-  const tableExisted = rows[0]?.existing_table != null;
+  const { rows } = await sql`
+    SELECT to_regclass('scrabble_games') AS games_table,
+           to_regclass('scrabble_seeds') AS seeds_table
+  `;
+  const gamesTableExisted = rows[0]?.games_table != null;
+  const seedsTableExisted = rows[0]?.seeds_table != null;
   await sql`
     CREATE TABLE IF NOT EXISTS scrabble_games (
       id         SERIAL      PRIMARY KEY,
@@ -25,13 +31,34 @@ async function migrateSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `;
-  if (tableExisted) return;
-  const seedState = JSON.stringify(normalizeGame(SEED_GAME));
   await sql`
-    INSERT INTO scrabble_games (state)
-    SELECT ${seedState}::jsonb
-    WHERE NOT EXISTS (SELECT 1 FROM scrabble_games)
+    CREATE TABLE IF NOT EXISTS scrabble_seeds (
+      key         TEXT        PRIMARY KEY,
+      inserted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
   `;
+  if (gamesTableExisted && !seedsTableExisted) {
+    // The games table predates the ledger, and creating it inserted the first
+    // seed game. Record that so the game isn't inserted a second time.
+    await sql`
+      INSERT INTO scrabble_seeds (key) VALUES (${SEED_GAMES[0].key})
+      ON CONFLICT DO NOTHING
+    `;
+  }
+  for (const seed of SEED_GAMES) {
+    const seedState = JSON.stringify(normalizeGame(seed.game));
+    // Claiming the key and inserting the game is one statement, so the game
+    // is inserted only by whichever caller claims the key.
+    await sql`
+      WITH claimed AS (
+        INSERT INTO scrabble_seeds (key) VALUES (${seed.key})
+        ON CONFLICT DO NOTHING
+        RETURNING key
+      )
+      INSERT INTO scrabble_games (state)
+      SELECT ${seedState}::jsonb FROM claimed
+    `;
+  }
 }
 
 // The in-flight or completed migration for this server instance.

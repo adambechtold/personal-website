@@ -305,16 +305,18 @@ form .input {
   color: var(--muted);
 }
 
+/* One word per line, so a multi-word move reads top to bottom. */
 .turnWords {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.6rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
   min-width: 0;
 }
 
 .turnWord {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 2px;
 }
 

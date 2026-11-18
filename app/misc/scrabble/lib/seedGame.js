@@ -1,4 +1,5 @@
-// The in-progress game inserted when the scrabble_games table is first created.
+// In-progress games inserted into scrabble_games, each exactly once (see
+// SEED_GAMES and ensureSchema in ../actions.js).
 
 const SHORTHAND_BONUSES = {
   "'": "double-letter",
@@ -42,7 +43,7 @@ export function parseShorthandTurn(shorthand) {
   };
 }
 
-const SEED_TURNS = [
+const ADAM_ADELA_LUIS_TURNS = [
   "TO*ES",
   "TOK'E",
   'F"IST, OF", K\'I',
@@ -64,5 +65,28 @@ const SEED_TURNS = [
 export const SEED_GAME = {
   name: "Adam, Adela & Luis",
   players: ["adam", "adela", "luis"],
-  turns: SEED_TURNS.map(parseShorthandTurn),
+  turns: ADAM_ADELA_LUIS_TURNS.map(parseShorthandTurn),
 };
+
+const LUIS_ADAM_ADELA_TURNS = [
+  "W*ADI",
+  'C"OD',
+  "W'ET', AT', WE",
+  "L'OX, L'AT, XI",
+];
+
+export const LUIS_ADAM_ADELA_GAME = {
+  name: "Luis, Adam & Adela",
+  players: ["luis", "adam", "adela"],
+  turns: LUIS_ADAM_ADELA_TURNS.map(parseShorthandTurn),
+};
+
+/**
+ * Every seed game, keyed so each one is inserted exactly once. Keys are
+ * recorded in the scrabble_seeds table; never rename or reuse one, or the
+ * game would be inserted again.
+ */
+export const SEED_GAMES = [
+  { key: "adam-adela-luis", game: SEED_GAME },
+  { key: "luis-adam-adela", game: LUIS_ADAM_ADELA_GAME },
+];
