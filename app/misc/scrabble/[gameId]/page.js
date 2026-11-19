@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { notFound } from "next/navigation";
 import ScrabbleGame from "../ScrabbleGame";
 import { loadGame } from "../actions";
+import { findShareKeyFor } from "../../../lib/shareLinks";
 import { gameDisplayName } from "../lib/format";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,14 @@ export default async function ScrabbleGamePage({ params }) {
   const { gameId } = await params;
   const game = await loadGame(gameId);
   if (!game) notFound();
-  return <ScrabbleGame gameId={Number(gameId)} initialGame={game} />;
+  const shareKey = await findShareKeyFor("scrabble", Number(gameId));
+  return (
+    <ScrabbleGame
+      gameId={Number(gameId)}
+      initialGame={game}
+      ownerShareKey={shareKey}
+    />
+  );
 }
 
 ScrabbleGamePage.propTypes = {

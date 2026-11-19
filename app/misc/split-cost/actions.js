@@ -2,7 +2,7 @@
 
 import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
-import { requireAuth } from "../../lib/auth";
+import { requireWriteAccess } from "../../lib/access";
 import { findTrip } from "./trips";
 
 /**
@@ -54,6 +54,18 @@ async function migrateSchema() {
     WHERE splits IS NULL
   `;
   await sql`ALTER TABLE expenses ALTER COLUMN splits DROP NOT NULL`;
+  // The full previous row of every edited or deleted expense, so a bad edit
+  // (or a bad actor with a share link) can be undone by hand.
+  await sql`
+    CREATE TABLE IF NOT EXISTS expense_history (
+      id         SERIAL      PRIMARY KEY,
+      expense_id INTEGER     NOT NULL,
+      trip       TEXT        NOT NULL,
+      change     TEXT        NOT NULL,
+      previous   JSONB       NOT NULL,
+      changed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
 }
 
 // The in-flight or completed migration for this server instance.
@@ -101,6 +113,37 @@ async function fetchRate(currency, date) {
   }
 }
 
+const MAX_DESCRIPTION_LENGTH = 200;
+const MAX_AMOUNT = 1000000;
+
+/**
+ * Parses an expense id from untrusted input.
+ * @param {*} id - The raw id.
+ * @return {number} The id.
+ * @throws {Error} If it isn't a positive integer.
+ */
+function parseExpenseId(id) {
+  const parsedId = Number(id);
+  if (!Number.isInteger(parsedId) || parsedId <= 0) {
+    throw new Error("Invalid expense id");
+  }
+  return parsedId;
+}
+
+/**
+ * Records an expense's current row in expense_history before it changes.
+ * @param {string} tripSlug - The trip slug.
+ * @param {number} id - The expense id.
+ * @param {"update"|"delete"} change - What is about to happen to it.
+ */
+async function recordHistory(tripSlug, id, change) {
+  await sql`
+    INSERT INTO expense_history (expense_id, trip, change, previous)
+    SELECT id, trip, ${change}, to_jsonb(expenses) FROM expenses
+    WHERE id = ${id} AND trip = ${tripSlug}
+  `;
+}
+
 /**
  * Resolves a trip slug to its trip, throwing for an unknown slug.
  * @param {string} tripSlug - The trip slug.
@@ -134,7 +177,10 @@ function parseExpense(trip, data) {
   return {
     paidBy: data.paid_by,
     amount: parseFloat(data.amount),
-    description: data.description || "",
+    description: String(data.description || "").slice(
+      0,
+      MAX_DESCRIPTION_LENGTH
+    ),
     expenseDate: data.expense_date,
     currency: data.currency || "USD",
     splits,
@@ -167,7 +213,11 @@ function legacySplitColumns(splits) {
 function validate(trip, expense) {
   const personIds = trip.people.map((person) => person.id);
   if (!personIds.includes(expense.paidBy)) throw new Error("Invalid paid_by");
-  if (isNaN(expense.amount) || expense.amount <= 0) {
+  if (
+    isNaN(expense.amount) ||
+    expense.amount <= 0 ||
+    expense.amount > MAX_AMOUNT
+  ) {
     throw new Error("Invalid amount");
   }
   if (!expense.expenseDate) throw new Error("Invalid date");
@@ -195,10 +245,11 @@ function validate(trip, expense) {
  * @param {string} data.expense_date
  * @param {string} data.currency
  * @param {Object} data.splits - Per-person `{shares, adjustment}` by person id.
+ * @param {string} [shareKey] - A guest's share key for this trip.
  */
-export async function addExpense(tripSlug, data) {
-  await requireAuth();
+export async function addExpense(tripSlug, data, shareKey) {
   const trip = requireTrip(tripSlug);
+  await requireWriteAccess("trip", trip.slug, shareKey);
   const expense = parseExpense(trip, data);
   validate(trip, expense);
   const { paidBy, amount, description, expenseDate, currency } = expense;
@@ -227,10 +278,12 @@ export async function addExpense(tripSlug, data) {
  * @param {string} tripSlug - Slug of the trip the expense belongs to.
  * @param {number} id - Expense ID.
  * @param {Object} data - Updated expense fields (same shape as addExpense).
+ * @param {string} [shareKey] - A guest's share key for this trip.
  */
-export async function updateExpense(tripSlug, id, data) {
-  await requireAuth();
+export async function updateExpense(tripSlug, id, data, shareKey) {
   const trip = requireTrip(tripSlug);
+  const expenseId = parseExpenseId(id);
+  await requireWriteAccess("trip", trip.slug, shareKey);
   const expense = parseExpense(trip, data);
   validate(trip, expense);
   const { paidBy, amount, description, expenseDate, currency } = expense;
@@ -242,6 +295,7 @@ export async function updateExpense(tripSlug, id, data) {
       : await fetchRate(currency, expenseDate);
   const legacy = legacySplitColumns(expense.splits);
   await ensureSchema();
+  await recordHistory(trip.slug, expenseId, "update");
   const { rowCount } = await sql`
     UPDATE expenses SET
       paid_by         = ${paidBy},
@@ -256,7 +310,7 @@ export async function updateExpense(tripSlug, id, data) {
       matt_shares     = ${legacy.mattShares},
       adam_adjustment = ${legacy.adamAdjustment},
       matt_adjustment = ${legacy.mattAdjustment}
-    WHERE id = ${id} AND trip = ${trip.slug}
+    WHERE id = ${expenseId} AND trip = ${trip.slug}
   `;
   if (rowCount === 0) {
     throw new Error("Expense not found — it may have been deleted.");
@@ -268,13 +322,16 @@ export async function updateExpense(tripSlug, id, data) {
  * Deletes an expense by ID, within its trip.
  * @param {string} tripSlug - Slug of the trip the expense belongs to.
  * @param {number} id - Expense ID.
+ * @param {string} [shareKey] - A guest's share key for this trip.
  */
-export async function deleteExpense(tripSlug, id) {
-  await requireAuth();
+export async function deleteExpense(tripSlug, id, shareKey) {
   const trip = requireTrip(tripSlug);
+  const expenseId = parseExpenseId(id);
+  await requireWriteAccess("trip", trip.slug, shareKey);
   await ensureSchema();
+  await recordHistory(trip.slug, expenseId, "delete");
   const { rowCount } =
-    await sql`DELETE FROM expenses WHERE id = ${id} AND trip = ${trip.slug}`;
+    await sql`DELETE FROM expenses WHERE id = ${expenseId} AND trip = ${trip.slug}`;
   if (rowCount === 0) {
     throw new Error("Expense not found — it may have already been deleted.");
   }

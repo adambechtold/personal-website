@@ -12,6 +12,7 @@ import { TODAY, toDateString } from "./lib/format";
 import SettlementSummary from "./components/SettlementSummary";
 import ExpenseForm from "./components/ExpenseForm";
 import ExpenseList from "./components/ExpenseList";
+import ShareLinkPanel from "../../components/ShareLinkPanel/ShareLinkPanel";
 
 /**
  * Builds the blank add-expense form for a trip: an even split between
@@ -56,10 +57,25 @@ function settlementLinesFor(trip, transfers) {
  * Trip tracker client component. Owns form + edit state and the expense
  * mutations; delegates rendering to the settlement summary, add form, and
  * expense list.
- * @param {{trip: Object, initialExpenses: Array}} props
+ *
+ * Rendered for the signed-in owner (who also gets the share panel) or for a
+ * guest arriving through a share link (who can add, edit, and delete this
+ * trip's expenses; every change carries their share key).
+ * @param {Object} props
+ * @param {Object} props.trip - The trip.
+ * @param {Array} props.initialExpenses - The trip's expenses.
+ * @param {string} [props.guestShareKey] - Set when a guest is viewing.
+ * @param {string|null} [props.ownerShareKey] - The trip's current share key,
+ *   for the owner's share panel.
  * @return {React.ReactElement}
  */
-export default function TripTracker({ trip, initialExpenses }) {
+export default function TripTracker({
+  trip,
+  initialExpenses,
+  guestShareKey,
+  ownerShareKey,
+}) {
+  const isGuest = Boolean(guestShareKey);
   const [form, setForm] = useState(() => emptyFormFor(trip));
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -92,7 +108,7 @@ export default function TripTracker({ trip, initialExpenses }) {
     event.preventDefault();
     setPending(true);
     try {
-      await addExpense(trip.slug, form);
+      await addExpense(trip.slug, form, guestShareKey);
       window.location.reload();
     } catch (error) {
       alert("Failed to add expense: " + error.message);
@@ -108,7 +124,7 @@ export default function TripTracker({ trip, initialExpenses }) {
     event.preventDefault();
     setPending(true);
     try {
-      await updateExpense(trip.slug, editId, editForm);
+      await updateExpense(trip.slug, editId, editForm, guestShareKey);
       window.location.reload();
     } catch (error) {
       alert("Failed to update expense: " + error.message);
@@ -124,7 +140,7 @@ export default function TripTracker({ trip, initialExpenses }) {
     if (!confirm("Delete this expense?")) return;
     setPending(true);
     try {
-      await deleteExpense(trip.slug, id);
+      await deleteExpense(trip.slug, id, guestShareKey);
       window.location.reload();
     } catch (error) {
       alert("Failed to delete expense: " + error.message);
@@ -161,9 +177,11 @@ export default function TripTracker({ trip, initialExpenses }) {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <Link href="/misc/split-cost" className={styles.backLink}>
-          ← All trips
-        </Link>
+        {!isGuest && (
+          <Link href="/misc/split-cost" className={styles.backLink}>
+            ← All trips
+          </Link>
+        )}
         <h1 className={styles.title}>
           {trip.emoji} {trip.name}
         </h1>
@@ -213,6 +231,14 @@ export default function TripTracker({ trip, initialExpenses }) {
           onUpdate={handleUpdate}
           onCancelEdit={() => setEditId(null)}
         />
+
+        {!isGuest && (
+          <ShareLinkPanel
+            kind="trip"
+            target={trip.slug}
+            initialShareKey={ownerShareKey ?? null}
+          />
+        )}
       </div>
     </div>
   );
@@ -221,4 +247,6 @@ export default function TripTracker({ trip, initialExpenses }) {
 TripTracker.propTypes = {
   trip: PropTypes.object.isRequired,
   initialExpenses: PropTypes.arrayOf(PropTypes.object).isRequired,
+  guestShareKey: PropTypes.string,
+  ownerShareKey: PropTypes.string,
 };
