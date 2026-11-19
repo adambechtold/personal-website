@@ -46,6 +46,7 @@ or other trips.
 If a shared game or trip gets wrecked, the previous data is kept and can be
 restored by hand:
 
-- `scrabble_game_revisions` — a snapshot of a game's state at most every 5
-  minutes while it is being edited, kept for 30 days.
+- `scrabble_game_revisions` — a snapshot of a game's state at most every 15
+  minutes while it is being edited, kept for 14 days. Saved games are capped
+  at 64KB, which bounds how much a vandal can store.
 - `expense_history` — the full previous row of every edited or deleted expense.

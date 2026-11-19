@@ -220,7 +220,10 @@ function validate(trip, expense) {
   ) {
     throw new Error("Invalid amount");
   }
-  if (!expense.expenseDate) throw new Error("Invalid date");
+  // Checked strictly because the date goes into the exchange-rate URL.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(expense.expenseDate))) {
+    throw new Error("Invalid date");
+  }
   if (!trip.currencies.includes(expense.currency)) {
     throw new Error("Invalid currency");
   }

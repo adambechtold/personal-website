@@ -153,9 +153,15 @@ export async function loadGame(gameId, shareKey) {
 
 // At most one revision per game per this many minutes, kept this many days.
 // Time-based (not count-based) retention means a flood of bad saves can't push
-// the good snapshots out.
-const REVISION_INTERVAL_MINUTES = 5;
-const REVISION_RETENTION_DAYS = 30;
+// the good snapshots out until they age out. Together with MAX_STORED_GAME_BYTES
+// this bounds what a vandal can store: 96 a day × 64KB × 14 days ≈ 86MB per
+// shared game, at worst.
+const REVISION_INTERVAL_MINUTES = 15;
+const REVISION_RETENTION_DAYS = 14;
+
+// A real game is a few KB (16 turns ≈ 4KB); this leaves plenty of headroom
+// while stopping a script from storing megabytes per save.
+const MAX_STORED_GAME_BYTES = 64 * 1024;
 
 /**
  * Snapshots a game's current state before it is overwritten, unless it was
@@ -191,11 +197,15 @@ export async function saveGame(gameId, game, shareKey) {
   if (parsedGameId == null) throw new Error("Invalid game id");
   await requireWriteAccess("scrabble", parsedGameId, shareKey);
   const normalizedGame = normalizeGame(game);
+  const serializedGame = JSON.stringify(normalizedGame);
+  if (serializedGame.length > MAX_STORED_GAME_BYTES) {
+    throw new Error("This game is too large to save.");
+  }
   await ensureSchema();
   await snapshotGame(parsedGameId);
   const { rowCount } = await sql`
     UPDATE scrabble_games
-    SET state = ${JSON.stringify(normalizedGame)}::jsonb, updated_at = now()
+    SET state = ${serializedGame}::jsonb, updated_at = now()
     WHERE id = ${parsedGameId}
   `;
   if (rowCount === 0) {
