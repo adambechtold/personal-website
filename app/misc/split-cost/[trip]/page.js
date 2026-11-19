@@ -1,9 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { notFound } from "next/navigation";
-import { sql } from "@vercel/postgres";
 import TripTracker from "../TripTracker";
-import { ensureSchema } from "../actions";
+import { listTripExpenses } from "../expenseQueries";
+import { findShareKeyFor } from "../../../lib/shareLinks";
 import { findTrip } from "../trips";
 
 export const dynamic = "force-dynamic";
@@ -34,20 +34,17 @@ export default async function TripPage({ params }) {
   const trip = findTrip(tripSlug);
   if (!trip) notFound();
 
-  await ensureSchema();
-  const { rows } = await sql`
-    SELECT * FROM expenses
-    WHERE trip = ${trip.slug}
-    ORDER BY expense_date DESC, id DESC
-  `;
-  const expenses = rows.map((row) => ({
-    ...row,
-    expense_date:
-      row.expense_date instanceof Date
-        ? row.expense_date.toISOString().slice(0, 10)
-        : String(row.expense_date).slice(0, 10),
-  }));
-  return <TripTracker trip={trip} initialExpenses={expenses} />;
+  const [expenses, shareKey] = await Promise.all([
+    listTripExpenses(trip.slug),
+    findShareKeyFor("trip", trip.slug),
+  ]);
+  return (
+    <TripTracker
+      trip={trip}
+      initialExpenses={expenses}
+      ownerShareKey={shareKey}
+    />
+  );
 }
 
 TripPage.propTypes = {

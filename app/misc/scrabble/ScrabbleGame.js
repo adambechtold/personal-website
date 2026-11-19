@@ -9,6 +9,7 @@ import Button from "../../components/ui/Button";
 import Scoreboard from "./components/Scoreboard";
 import MoveHistory from "./components/MoveHistory";
 import TurnEditor from "./components/TurnEditor";
+import ShareLinkPanel from "../../components/ShareLinkPanel/ShareLinkPanel";
 import { saveGame, loadGame, deleteGame } from "./actions";
 import { currentPlayerIndex, playerTotals } from "./lib/scoring";
 import { gameDisplayName } from "./lib/format";
@@ -24,10 +25,25 @@ const SAVE_STATUS_TEXT = {
  * One game's scorekeeper: the scoreboard, the editable move history, and the
  * always-visible editor for the next turn. Every change saves the whole game,
  * one save at a time.
- * @param {{gameId: number, initialGame: Object}} props
+ *
+ * Rendered for the signed-in owner (who also gets the share panel and can
+ * delete the game) or for a guest arriving through a share link (who can only
+ * play and edit this one game; every save carries their share key).
+ * @param {Object} props
+ * @param {number} props.gameId - The game id.
+ * @param {Object} props.initialGame - The game as loaded.
+ * @param {string} [props.guestShareKey] - Set when a guest is viewing.
+ * @param {string|null} [props.ownerShareKey] - The game's current share key,
+ *   for the owner's share panel.
  * @return {React.ReactElement}
  */
-export default function ScrabbleGame({ gameId, initialGame }) {
+export default function ScrabbleGame({
+  gameId,
+  initialGame,
+  guestShareKey,
+  ownerShareKey,
+}) {
+  const isGuest = Boolean(guestShareKey);
   const [game, setGame] = useState(initialGame);
   const [editingTurnIndex, setEditingTurnIndex] = useState(null);
   const [nextTurnEditorKey, setNextTurnEditorKey] = useState(0);
@@ -60,7 +76,7 @@ export default function ScrabbleGame({ gameId, initialGame }) {
       while (unsavedRef.current) {
         unsavedRef.current = false;
         try {
-          await saveGame(gameId, gameRef.current);
+          await saveGame(gameId, gameRef.current, guestShareKey);
         } catch {
           unsavedRef.current = true;
           setSaveStatus("error");
@@ -94,14 +110,14 @@ export default function ScrabbleGame({ gameId, initialGame }) {
       editingRef.current || savingRef.current || unsavedRef.current;
     if (isBusy()) return;
     try {
-      const loadedGame = await loadGame(gameId);
+      const loadedGame = await loadGame(gameId, guestShareKey);
       if (!loadedGame || isBusy()) return;
       gameRef.current = loadedGame;
       setGame(loadedGame);
     } catch {
       // Offline or signed out: keep showing what we have.
     }
-  }, [gameId]);
+  }, [gameId, guestShareKey]);
 
   useEffect(() => {
     /** Reloads when the tab becomes visible again. */
@@ -167,9 +183,13 @@ export default function ScrabbleGame({ gameId, initialGame }) {
     <div className={styles.page}>
       <div className={styles.container}>
         <div className={styles.topBar}>
-          <Link href="/misc/scrabble" className={styles.backLink}>
-            ← All games
-          </Link>
+          {isGuest ? (
+            <span />
+          ) : (
+            <Link href="/misc/scrabble" className={styles.backLink}>
+              ← All games
+            </Link>
+          )}
           <span className={styles.saveStatus} aria-live="polite">
             {saveStatus === "error" ? (
               <button
@@ -213,42 +233,52 @@ export default function ScrabbleGame({ gameId, initialGame }) {
           />
         </Card>
 
-        <div className={styles.deleteGameRow}>
-          {confirmingDeleteGame ? (
-            <>
-              <span className={styles.mutedText}>
-                {deleteGameFailed
-                  ? "Couldn't delete — try again?"
-                  : "Delete this game for good?"}
-              </span>
-              <Button
+        {!isGuest && (
+          <ShareLinkPanel
+            kind="scrabble"
+            target={gameId}
+            initialShareKey={ownerShareKey ?? null}
+          />
+        )}
+
+        {!isGuest && (
+          <div className={styles.deleteGameRow}>
+            {confirmingDeleteGame ? (
+              <>
+                <span className={styles.mutedText}>
+                  {deleteGameFailed
+                    ? "Couldn't delete — try again?"
+                    : "Delete this game for good?"}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  className={styles.dangerButton}
+                  onClick={handleDeleteGame}
+                  disabled={deletingGame}
+                >
+                  {deletingGame ? "Deleting…" : "Delete"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setConfirmingDeleteGame(false)}
+                  disabled={deletingGame}
+                >
+                  Keep
+                </Button>
+              </>
+            ) : (
+              <button
                 type="button"
-                size="sm"
-                className={styles.dangerButton}
-                onClick={handleDeleteGame}
-                disabled={deletingGame}
+                className={styles.linkButton}
+                onClick={() => setConfirmingDeleteGame(true)}
               >
-                {deletingGame ? "Deleting…" : "Delete"}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setConfirmingDeleteGame(false)}
-                disabled={deletingGame}
-              >
-                Keep
-              </Button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className={styles.linkButton}
-              onClick={() => setConfirmingDeleteGame(true)}
-            >
-              Delete game
-            </button>
-          )}
-        </div>
+                Delete game
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -261,4 +291,6 @@ ScrabbleGame.propTypes = {
     players: PropTypes.arrayOf(PropTypes.string).isRequired,
     turns: PropTypes.array.isRequired,
   }).isRequired,
+  guestShareKey: PropTypes.string,
+  ownerShareKey: PropTypes.string,
 };

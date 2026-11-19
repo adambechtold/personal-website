@@ -17,7 +17,16 @@ const GoogleAnalytics = ({ GA_TRACKING_ID }) => {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
 
-          gtag('config', '${GA_TRACKING_ID}');
+          // Share links carry a secret key in the path; never send it to GA.
+          if (window.location.pathname.indexOf('/shared/') === 0) {
+            gtag('config', '${GA_TRACKING_ID}', {
+              page_location: window.location.origin + '/shared/redacted',
+              page_path: '/shared/redacted',
+              page_referrer: '',
+            });
+          } else {
+            gtag('config', '${GA_TRACKING_ID}');
+          }
         `}
       </Script>
     </>

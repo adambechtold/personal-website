@@ -4,6 +4,8 @@ import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAuth } from "../../lib/auth";
+import { requireReadAccess, requireWriteAccess } from "../../lib/access";
+import { revokeShareKey } from "../../lib/shareLinks";
 import { normalizeGame, parsePlayerList } from "./lib/normalizeGame";
 import { SEED_GAMES } from "./lib/seedGame";
 
@@ -30,6 +32,20 @@ async function migrateSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+  // Snapshots of earlier game states, so a game wrecked by a bad edit (or a
+  // bad actor with a share link) can be restored by hand. See saveGame.
+  await sql`
+    CREATE TABLE IF NOT EXISTS scrabble_game_revisions (
+      id       SERIAL      PRIMARY KEY,
+      game_id  INTEGER     NOT NULL,
+      state    JSONB       NOT NULL,
+      saved_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS scrabble_game_revisions_game_saved
+    ON scrabble_game_revisions (game_id, saved_at)
   `;
   await sql`
     CREATE TABLE IF NOT EXISTS scrabble_seeds (
@@ -121,12 +137,13 @@ export async function listGames() {
 /**
  * Loads one game.
  * @param {number} gameId - The game id.
+ * @param {string} [shareKey] - A guest's share key for this game.
  * @return {Promise<Object|null>} The normalized game, or null if not found.
  */
-export async function loadGame(gameId) {
-  await requireAuth();
+export async function loadGame(gameId, shareKey) {
   const parsedGameId = parseGameId(gameId);
   if (parsedGameId == null) return null;
+  await requireReadAccess("scrabble", parsedGameId, shareKey);
   await ensureSchema();
   const { rows } =
     await sql`SELECT state FROM scrabble_games WHERE id = ${parsedGameId}`;
@@ -134,21 +151,61 @@ export async function loadGame(gameId) {
   return normalizeGame(rows[0].state);
 }
 
+// At most one revision per game per this many minutes, kept this many days.
+// Time-based (not count-based) retention means a flood of bad saves can't push
+// the good snapshots out until they age out. Together with MAX_STORED_GAME_BYTES
+// this bounds what a vandal can store: 96 a day × 64KB × 14 days ≈ 86MB per
+// shared game, at worst.
+const REVISION_INTERVAL_MINUTES = 15;
+const REVISION_RETENTION_DAYS = 14;
+
+// A real game is a few KB (16 turns ≈ 4KB); this leaves plenty of headroom
+// while stopping a script from storing megabytes per save.
+const MAX_STORED_GAME_BYTES = 64 * 1024;
+
+/**
+ * Snapshots a game's current state before it is overwritten, unless it was
+ * snapshotted in the last few minutes, and drops snapshots past retention.
+ * @param {number} gameId - The parsed game id.
+ */
+async function snapshotGame(gameId) {
+  await sql`
+    INSERT INTO scrabble_game_revisions (game_id, state)
+    SELECT id, state FROM scrabble_games
+    WHERE id = ${gameId} AND NOT EXISTS (
+      SELECT 1 FROM scrabble_game_revisions
+      WHERE game_id = ${gameId}
+        AND saved_at > now() - make_interval(mins => ${REVISION_INTERVAL_MINUTES})
+    )
+  `;
+  await sql`
+    DELETE FROM scrabble_game_revisions
+    WHERE game_id = ${gameId}
+      AND saved_at < now() - make_interval(days => ${REVISION_RETENTION_DAYS})
+  `;
+}
+
 /**
  * Overwrites a game's state with the whole (normalized) game.
  * @param {number} gameId - The game id.
  * @param {Object} game - The full game.
+ * @param {string} [shareKey] - A guest's share key for this game.
  * @return {Promise<Object>} The game as stored.
  */
-export async function saveGame(gameId, game) {
-  await requireAuth();
+export async function saveGame(gameId, game, shareKey) {
   const parsedGameId = parseGameId(gameId);
   if (parsedGameId == null) throw new Error("Invalid game id");
+  await requireWriteAccess("scrabble", parsedGameId, shareKey);
   const normalizedGame = normalizeGame(game);
+  const serializedGame = JSON.stringify(normalizedGame);
+  if (serializedGame.length > MAX_STORED_GAME_BYTES) {
+    throw new Error("This game is too large to save.");
+  }
   await ensureSchema();
+  await snapshotGame(parsedGameId);
   const { rowCount } = await sql`
     UPDATE scrabble_games
-    SET state = ${JSON.stringify(normalizedGame)}::jsonb, updated_at = now()
+    SET state = ${serializedGame}::jsonb, updated_at = now()
     WHERE id = ${parsedGameId}
   `;
   if (rowCount === 0) {
@@ -190,6 +247,7 @@ export async function deleteGame(gameId) {
   if (parsedGameId == null) throw new Error("Invalid game id");
   await ensureSchema();
   await sql`DELETE FROM scrabble_games WHERE id = ${parsedGameId}`;
+  await revokeShareKey("scrabble", parsedGameId);
   revalidatePath("/misc/scrabble");
   redirect("/misc/scrabble");
 }
